@@ -217,13 +217,20 @@ resource "aws_eks_node_group" "system" {
 }
 
 # ==============================================================================
-# MODULE 2: Spot Service-Linked Role (already exists - skip if present)
-# Note: SLR is account-level and already exists from previous setup.
-# Terraform will error if it tries to create a duplicate.
-# If you get an error, just remove this resource block.
-# resource "aws_iam_service_linked_role" "spot" {
-#   aws_service_name = "spot.amazonaws.com"
-# }
+# MODULE 2: Spot Service-Linked Role
+# Required for any Spot instance launch. Safe to attempt even if it already
+# exists in the account — lifecycle ignore_changes prevents drift errors.
+# If creation fails with AlreadyExists, run:
+#   terraform import aws_iam_service_linked_role.spot arn:aws:iam::ACCOUNT_ID:role/aws-service-role/spot.amazonaws.com/AWSServiceRoleForEC2Spot
+# ==============================================================================
+
+resource "aws_iam_service_linked_role" "spot" {
+  aws_service_name = "spot.amazonaws.com"
+
+  lifecycle {
+    ignore_changes = [description]
+  }
+}
 # ==============================================================================
 
 # ==============================================================================
