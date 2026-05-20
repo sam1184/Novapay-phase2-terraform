@@ -139,7 +139,16 @@ eksctl create iamidentitymapping \
   --arn "arn:aws:iam::${ACCOUNT_ID}:role/KarpenterNodeRole-${CLUSTER_NAME}" \
   --group system:bootstrappers \
   --group system:nodes \
-  --username "system:node:{{EC2PrivateDNSName}}" 2>/dev/null || echo "  Mapping already exists"
+  --username "system:node:{{EC2PrivateDNSName}}" || echo "  Mapping already exists — continuing"
+
+# VALIDATE — fail fast if mapping is missing; Karpenter nodes will launch but never join
+if ! eksctl get iamidentitymapping --cluster ${CLUSTER_NAME} --region ${REGION} 2>/dev/null | grep -q "KarpenterNodeRole"; then
+  echo "ERROR: KarpenterNodeRole identity mapping not found in aws-auth."
+  echo "  Karpenter nodes will launch but refuse to join the cluster (401 Unauthorized)."
+  echo "  Fix: eksctl create iamidentitymapping --cluster ${CLUSTER_NAME} --region ${REGION} --arn arn:aws:iam::${ACCOUNT_ID}:role/KarpenterNodeRole-${CLUSTER_NAME} --group system:bootstrappers --group system:nodes --username system:node:{{EC2PrivateDNSName}}"
+  exit 1
+fi
+echo "  IAM identity mapping confirmed"
 
 # -- Install Karpenter via Helm -----------------------------------------------
 echo ""
@@ -293,68 +302,231 @@ kubectl set env daemonset aws-node -n kube-system \
 
 # ==============================================================================
 # BUILD AND PUSH ECR IMAGES
+# Issue 3 fix: Check if ALL images exist first. Skip entire Docker section if
+# they do — avoids failure on machines where Docker is not installed/running.
+# If any image is missing, Docker is required locally.
 # ==============================================================================
 echo ""
 echo "==== Building and Pushing ECR Images ===="
 
-aws ecr get-login-password --region ${REGION} | \
-  docker login --username AWS --password-stdin ${ECR_BASE}
-
+IMAGES_EXIST=true
 for svc in auth charge webhook kyc; do
-  REPO="${ECR_BASE}/novapay-poc/${svc}"
-  if aws ecr describe-images --repository-name "novapay-poc/${svc}" \
+  if ! aws ecr describe-images --repository-name "novapay-poc/${svc}" \
     --image-ids imageTag=v1.0.0 --region ${REGION} >/dev/null 2>&1; then
-    echo "  ${svc}:v1.0.0 already exists - skipping"
-  else
-    echo "  Building ${svc}:v1.0.0..."
-    docker build --target runner --platform linux/amd64 \
-      -t "${REPO}:v1.0.0" "${REPO_ROOT}/services/${svc}"
-    docker push "${REPO}:v1.0.0"
-    echo "  ${svc}:v1.0.0 pushed"
+    IMAGES_EXIST=false
+    echo "  novapay-poc/${svc}:v1.0.0 missing"
+    break
   fi
 done
 
-for svc in auth charge webhook kyc; do
-  REPO="${ECR_BASE}/novapay-poc/${svc}"
-  if aws ecr describe-images --repository-name "novapay-poc/${svc}" \
-    --image-ids imageTag=v2.0.0 --region ${REGION} >/dev/null 2>&1; then
-    echo "  ${svc}:v2.0.0 already exists - skipping"
-  else
-    echo "  Building ${svc}:v2.0.0..."
-    docker build --target runner --platform linux/amd64 \
-      -t "${REPO}:v2.0.0" "${REPO_ROOT}/services/${svc}"
-    docker push "${REPO}:v2.0.0"
-    echo "  ${svc}:v2.0.0 pushed"
+if [ "${IMAGES_EXIST}" = "true" ]; then
+  echo "  All v1.0.0 images already exist in ECR — skipping build"
+  echo "  Checking v2.0.0..."
+  for svc in auth charge webhook kyc; do
+    if ! aws ecr describe-images --repository-name "novapay-poc/${svc}" \
+      --image-ids imageTag=v2.0.0 --region ${REGION} >/dev/null 2>&1; then
+      echo "  novapay-poc/${svc}:v2.0.0 missing — will build"
+      IMAGES_EXIST=false
+      break
+    fi
+  done
+fi
+
+if [ "${IMAGES_EXIST}" = "true" ]; then
+  echo "  All v1.0.0 + v2.0.0 images exist — skipping all builds"
+else
+  # Check Docker is available before attempting local build
+  if ! docker info >/dev/null 2>&1; then
+    echo ""
+    echo "ERROR: Docker is not running (or not installed) and ECR images are missing."
+    echo "  Option A: Start Docker Desktop and re-run this script."
+    echo "  Option B: Push images from another machine that already has Docker."
+    echo "  Option C: Use AWS CodeBuild — copy build-and-deploy.sh from the working machine."
+    echo ""
+    exit 1
   fi
-done
+
+  aws ecr get-login-password --region ${REGION} | \
+    docker login --username AWS --password-stdin ${ECR_BASE}
+
+  for svc in auth charge webhook kyc; do
+    REPO="${ECR_BASE}/novapay-poc/${svc}"
+    if aws ecr describe-images --repository-name "novapay-poc/${svc}" \
+      --image-ids imageTag=v1.0.0 --region ${REGION} >/dev/null 2>&1; then
+      echo "  ${svc}:v1.0.0 already exists — skipping"
+    else
+      echo "  Building ${svc}:v1.0.0..."
+      docker build --target runner --platform linux/amd64 \
+        -t "${REPO}:v1.0.0" "${REPO_ROOT}/services/${svc}"
+      docker push "${REPO}:v1.0.0"
+      echo "  ${svc}:v1.0.0 pushed"
+    fi
+  done
+
+  for svc in auth charge webhook kyc; do
+    REPO="${ECR_BASE}/novapay-poc/${svc}"
+    if aws ecr describe-images --repository-name "novapay-poc/${svc}" \
+      --image-ids imageTag=v2.0.0 --region ${REGION} >/dev/null 2>&1; then
+      echo "  ${svc}:v2.0.0 already exists — skipping"
+    else
+      echo "  Building ${svc}:v2.0.0..."
+      docker build --target runner --platform linux/amd64 \
+        -t "${REPO}:v2.0.0" "${REPO_ROOT}/services/${svc}"
+      docker push "${REPO}:v2.0.0"
+      echo "  ${svc}:v2.0.0 pushed"
+    fi
+  done
+fi
 
 # ==============================================================================
 # MODULE 3: Deploy Database Dependencies (INLINED)
+# Issue 4 fix: Use heredoc YAML instead of kubectl run --overrides (breaks on zsh)
+# Issue 6 fix: Add labels to pods so Services can find them via selector
+# Issue 7 fix: Add allow-intra-namespace NetworkPolicy so pods can reach each other
 # ==============================================================================
 echo ""
 echo "==== Deploying Database Dependencies ===="
 
-kubectl run postgres --image=postgres:15 \
-  --namespace=novapay-prod \
-  --port=5432 \
-  --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":999,"fsGroup":999,"seccompProfile":{"type":"RuntimeDefault"}}}}' \
-  2>/dev/null || echo "  postgres already exists"
+# -- allow-intra-namespace NetworkPolicy (Issue 7) ----------------------------
+# The default-deny-all + allow-dns policies block pod-to-pod traffic on app
+# ports (5432, 6379). This policy opens intra-namespace communication.
+# Without it: auth-service gets DNS resolution for "postgres" but TCP is blocked.
+cat <<'EOF' | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-intra-namespace
+  namespace: novapay-prod
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector: {}
+  egress:
+    - to:
+        - podSelector: {}
+EOF
+echo "  allow-intra-namespace NetworkPolicy applied"
+
+# -- PostgreSQL pod (Issue 4 + 6) ---------------------------------------------
+# heredoc YAML avoids zsh JSON mangling; labels added so Service selector works
+cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: postgres
+  namespace: novapay-prod
+  labels:
+    app: postgres
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    fsGroup: 999
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: postgres
+      image: postgres:15
+      ports:
+        - containerPort: 5432
+      command:
+        - bash
+        - -c
+        - |
+          mkdir -p /tmp/pgdata
+          openssl req -new -x509 -nodes -days 365 -text             -out /tmp/server.crt -keyout /tmp/server.key             -subj /CN=postgres > /dev/null 2>&1
+          chmod 600 /tmp/server.key
+          chown 999:999 /tmp/server.key
+          exec docker-entrypoint.sh postgres             -c ssl=on             -c ssl_cert_file=/tmp/server.crt             -c ssl_key_file=/tmp/server.key
+      env:
+        - {name: POSTGRES_DB, value: novapay}
+        - {name: POSTGRES_USER, value: novapay_user}
+        - {name: POSTGRES_PASSWORD, value: labpass123}
+        - {name: PGDATA, value: /tmp/pgdata}
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      volumeMounts:
+        - {name: tmp, mountPath: /tmp}
+  volumes:
+    - {name: tmp, emptyDir: {}}
+EOF
 
 kubectl wait --for=condition=Ready pod/postgres -n novapay-prod --timeout=90s
-kubectl expose pod postgres --port=5432 --namespace=novapay-prod 2>/dev/null || true
 
+# -- PostgreSQL Service (Issue 6 fix) -----------------------------------------
+# Explicit Service YAML — does not depend on kubectl expose finding labels at runtime
+cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: novapay-prod
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+EOF
+
+# -- Create schema ------------------------------------------------------------
 sleep 5
-kubectl exec -n novapay-prod postgres -- psql -U novapay_user -d novapay -c \
-  "CREATE TABLE IF NOT EXISTS txns (id TEXT PRIMARY KEY, merchant TEXT NOT NULL, amount NUMERIC NOT NULL, status TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW());" 2>/dev/null || true
+kubectl exec -n novapay-prod postgres -- psql -U novapay_user -d novapay -c   "CREATE TABLE IF NOT EXISTS txns (id TEXT PRIMARY KEY, merchant TEXT NOT NULL, amount NUMERIC NOT NULL, status TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW());" 2>/dev/null || true
+echo "  PostgreSQL ready with schema"
 
-kubectl run redis --image=redis:7-alpine \
-  --namespace=novapay-prod \
-  --port=6379 \
-  --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":999,"fsGroup":999,"seccompProfile":{"type":"RuntimeDefault"}}}}' \
-  2>/dev/null || echo "  redis already exists"
+# -- Redis pod (Issue 4 + 6) --------------------------------------------------
+cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis
+  namespace: novapay-prod
+  labels:
+    app: redis
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    fsGroup: 999
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: redis
+      image: redis:7-alpine
+      ports:
+        - containerPort: 6379
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      volumeMounts:
+        - {name: tmp, mountPath: /tmp}
+  volumes:
+    - {name: tmp, emptyDir: {}}
+EOF
 
 kubectl wait --for=condition=Ready pod/redis -n novapay-prod --timeout=60s
-kubectl expose pod redis --port=6379 --namespace=novapay-prod 2>/dev/null || true
+
+# -- Redis Service (Issue 6 fix) ----------------------------------------------
+cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: novapay-prod
+spec:
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+EOF
 
 echo "  PostgreSQL + Redis running"
 
@@ -411,7 +583,7 @@ spec:
           ports:
             - containerPort: 3001
           env:
-            - {name: NODE_ENV, value: "production"}
+            - {name: NODE_ENV, value: "lab"}
             - {name: PORT, value: "3001"}
             - {name: SERVICE_NAME, value: "auth-service"}
             - {name: SHUTDOWN_TIMEOUT_MS, value: "55000"}
