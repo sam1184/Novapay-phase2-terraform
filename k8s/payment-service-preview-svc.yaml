@@ -1,32 +1,25 @@
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    argo-rollouts.argoproj.io/managed-by-rollouts: payment-service
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"payment-service-preview","namespace":"novapay-prod"},"spec":{"ports":[{"name":"http","port":80,"targetPort":3002}],"selector":{"app":"payment-service"}}}
-  creationTimestamp: "2026-05-20T11:13:53Z"
-  name: payment-service-preview
-  namespace: novapay-prod
-  resourceVersion: "145385"
-  uid: a39a5cb4-e93f-459a-8eaa-a7fbf6f70431
-spec:
-  clusterIP: 172.20.109.113
-  clusterIPs:
-  - 172.20.109.113
-  internalTrafficPolicy: Cluster
-  ipFamilies:
-  - IPv4
-  ipFamilyPolicy: SingleStack
-  ports:
-  - name: http
-    port: 80
-    protocol: TCP
-    targetPort: 3002
-  selector:
-    app: payment-service
-    rollouts-pod-template-hash: 7c68f69c88
-  sessionAffinity: None
-  type: ClusterIP
-status:
-  loadBalancer: {}
+{
+  "apiVersion": "v1",
+  "kind": "Service",
+  "metadata": {
+    "annotations": {
+      "argo-rollouts.argoproj.io/managed-by-rollouts": "payment-service"
+    },
+    "name": "payment-service-preview",
+    "namespace": "novapay-prod"
+  },
+  "spec": {
+    "ports": [
+      {
+        "name": "http",
+        "port": 80,
+        "targetPort": 3002
+      }
+    ],
+    "selector": {
+      "app": "payment-service",
+      "rollouts-pod-template-hash": "7d95b5c448"
+    },
+    "type": "ClusterIP"
+  }
+}

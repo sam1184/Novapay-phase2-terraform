@@ -1,146 +1,164 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
-metadata:
-  annotations:
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"argoproj.io/v1alpha1","kind":"Rollout","metadata":{"annotations":{},"name":"payment-service","namespace":"novapay-prod"},"spec":{"replicas":3,"revisionHistoryLimit":3,"selector":{"matchLabels":{"app":"payment-service"}},"strategy":{"blueGreen":{"activeService":"payment-service-active","autoPromotionEnabled":false,"previewService":"payment-service-preview","scaleDownDelaySeconds":60}},"template":{"metadata":{"labels":{"app":"payment-service"}},"spec":{"containers":[{"env":[{"name":"NODE_ENV","value":"production"},{"name":"PORT","value":"3002"},{"name":"SERVICE_NAME","value":"payment-service"},{"name":"SHUTDOWN_TIMEOUT_MS","value":"55000"},{"name":"DB_HOST","value":"postgres"},{"name":"DB_PORT","value":"5432"},{"name":"DB_NAME","value":"novapay"},{"name":"DB_USERNAME","value":"novapay_user"},{"name":"DB_PASSWORD","value":"labpass123"}],"image":"628306021196.dkr.ecr.us-east-1.amazonaws.com/novapay-poc/charge:v1.0.0","livenessProbe":{"failureThreshold":3,"httpGet":{"path":"/health","port":3002},"initialDelaySeconds":15,"periodSeconds":10},"name":"payment-service","ports":[{"containerPort":3002}],"readinessProbe":{"failureThreshold":3,"httpGet":{"path":"/health","port":3002},"initialDelaySeconds":5,"periodSeconds":5},"resources":{"limits":{"cpu":"1","memory":"1Gi"},"requests":{"cpu":"250m","memory":"512Mi"}},"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true},"volumeMounts":[{"mountPath":"/tmp","name":"tmp"}]}],"securityContext":{"runAsNonRoot":true,"runAsUser":1000,"seccompProfile":{"type":"RuntimeDefault"}},"serviceAccountName":"payment-service-sa","terminationGracePeriodSeconds":60,"tolerations":[{"effect":"NoSchedule","key":"novapay.io/payment-critical","operator":"Exists"}],"topologySpreadConstraints":[{"labelSelector":{"matchLabels":{"app":"payment-service"}},"maxSkew":1,"topologyKey":"topology.kubernetes.io/zone","whenUnsatisfiable":"DoNotSchedule"}],"volumes":[{"emptyDir":{},"name":"tmp"}]}}}}
-    rollout.argoproj.io/revision: "1"
-  creationTimestamp: "2026-05-20T11:13:56Z"
-  generation: 1
-  name: payment-service
-  namespace: novapay-prod
-  resourceVersion: "145515"
-  uid: e3a19556-7604-41ec-995e-0fd7558340ba
-spec:
-  replicas: 3
-  revisionHistoryLimit: 3
-  selector:
-    matchLabels:
-      app: payment-service
-  strategy:
-    blueGreen:
-      activeService: payment-service-active
-      autoPromotionEnabled: false
-      previewService: payment-service-preview
-      scaleDownDelaySeconds: 60
-  template:
-    metadata:
-      labels:
-        app: payment-service
-    spec:
-      containers:
-      - env:
-        - name: NODE_ENV
-          value: production
-        - name: PORT
-          value: "3002"
-        - name: SERVICE_NAME
-          value: payment-service
-        - name: SHUTDOWN_TIMEOUT_MS
-          value: "55000"
-        - name: DB_HOST
-          value: postgres
-        - name: DB_PORT
-          value: "5432"
-        - name: DB_NAME
-          value: novapay
-        - name: DB_USERNAME
-          value: novapay_user
-        - name: DB_PASSWORD
-          value: labpass123
-        image: 628306021196.dkr.ecr.us-east-1.amazonaws.com/novapay-poc/charge:v1.0.0
-        livenessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: /health
-            port: 3002
-          initialDelaySeconds: 15
-          periodSeconds: 10
-        name: payment-service
-        ports:
-        - containerPort: 3002
-          protocol: TCP
-        readinessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: /health
-            port: 3002
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        resources:
-          limits:
-            cpu: "1"
-            memory: 1Gi
-          requests:
-            cpu: 250m
-            memory: 512Mi
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          readOnlyRootFilesystem: true
-        volumeMounts:
-        - mountPath: /tmp
-          name: tmp
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        seccompProfile:
-          type: RuntimeDefault
-      serviceAccountName: payment-service-sa
-      terminationGracePeriodSeconds: 60
-      tolerations:
-      - effect: NoSchedule
-        key: novapay.io/payment-critical
-        operator: Exists
-      topologySpreadConstraints:
-      - labelSelector:
-          matchLabels:
-            app: payment-service
-        maxSkew: 1
-        topologyKey: topology.kubernetes.io/zone
-        whenUnsatisfiable: DoNotSchedule
-      volumes:
-      - emptyDir: {}
-        name: tmp
-status:
-  HPAReplicas: 3
-  availableReplicas: 3
-  blueGreen:
-    activeSelector: 7c68f69c88
-    previewSelector: 7c68f69c88
-  canary: {}
-  conditions:
-  - lastTransitionTime: "2026-05-20T11:13:56Z"
-    lastUpdateTime: "2026-05-20T11:13:56Z"
-    message: RolloutCompleted
-    reason: RolloutCompleted
-    status: "True"
-    type: Completed
-  - lastTransitionTime: "2026-05-20T11:14:07Z"
-    lastUpdateTime: "2026-05-20T11:14:07Z"
-    message: Rollout is healthy
-    reason: RolloutHealthy
-    status: "True"
-    type: Healthy
-  - lastTransitionTime: "2026-05-20T11:13:56Z"
-    lastUpdateTime: "2026-05-20T11:14:07Z"
-    message: ReplicaSet "payment-service-7c68f69c88" has successfully progressed.
-    reason: NewReplicaSetAvailable
-    status: "True"
-    type: Progressing
-  - lastTransitionTime: "2026-05-20T11:14:07Z"
-    lastUpdateTime: "2026-05-20T11:14:07Z"
-    message: Rollout has minimum availability
-    reason: AvailableReason
-    status: "True"
-    type: Available
-  currentPodHash: 7c68f69c88
-  observedGeneration: "1"
-  phase: Healthy
-  readyReplicas: 3
-  replicas: 3
-  selector: app=payment-service,rollouts-pod-template-hash=7c68f69c88
-  stableRS: 7c68f69c88
-  updatedReplicas: 3
+{
+  "apiVersion": "argoproj.io/v1alpha1",
+  "kind": "Rollout",
+  "metadata": {
+    "annotations": {
+      "rollout.argoproj.io/revision": "1"
+    },
+    "name": "payment-service",
+    "namespace": "novapay-prod"
+  },
+  "spec": {
+    "replicas": 3,
+    "revisionHistoryLimit": 3,
+    "selector": {
+      "matchLabels": {
+        "app": "payment-service"
+      }
+    },
+    "strategy": {
+      "blueGreen": {
+        "activeService": "payment-service-active",
+        "autoPromotionEnabled": false,
+        "previewService": "payment-service-preview",
+        "scaleDownDelaySeconds": 60
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "payment-service"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "env": [
+              {
+                "name": "NODE_ENV",
+                "value": "production"
+              },
+              {
+                "name": "PORT",
+                "value": "3002"
+              },
+              {
+                "name": "SERVICE_NAME",
+                "value": "payment-service"
+              },
+              {
+                "name": "SHUTDOWN_TIMEOUT_MS",
+                "value": "55000"
+              },
+              {
+                "name": "DB_HOST",
+                "value": "postgres"
+              },
+              {
+                "name": "DB_PORT",
+                "value": "5432"
+              },
+              {
+                "name": "DB_NAME",
+                "value": "novapay"
+              },
+              {
+                "name": "DB_USERNAME",
+                "value": "novapay_user"
+              },
+              {
+                "name": "DB_PASSWORD",
+                "value": "labpass123"
+              }
+            ],
+            "image": "283298108838.dkr.ecr.us-east-1.amazonaws.com/novapay-poc/charge:v1.0.0",
+            "livenessProbe": {
+              "failureThreshold": 3,
+              "httpGet": {
+                "path": "/health",
+                "port": 3002
+              },
+              "initialDelaySeconds": 15,
+              "periodSeconds": 10
+            },
+            "name": "payment-service",
+            "ports": [
+              {
+                "containerPort": 3002,
+                "protocol": "TCP"
+              }
+            ],
+            "readinessProbe": {
+              "failureThreshold": 3,
+              "httpGet": {
+                "path": "/health",
+                "port": 3002
+              },
+              "initialDelaySeconds": 5,
+              "periodSeconds": 5
+            },
+            "resources": {
+              "limits": {
+                "cpu": "1",
+                "memory": "1Gi"
+              },
+              "requests": {
+                "cpu": "250m",
+                "memory": "512Mi"
+              }
+            },
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "readOnlyRootFilesystem": true
+            },
+            "volumeMounts": [
+              {
+                "mountPath": "/tmp",
+                "name": "tmp"
+              }
+            ]
+          }
+        ],
+        "securityContext": {
+          "runAsNonRoot": true,
+          "runAsUser": 1000,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "serviceAccountName": "payment-service-sa",
+        "terminationGracePeriodSeconds": 60,
+        "tolerations": [
+          {
+            "effect": "NoSchedule",
+            "key": "novapay.io/payment-critical",
+            "operator": "Exists"
+          }
+        ],
+        "topologySpreadConstraints": [
+          {
+            "labelSelector": {
+              "matchLabels": {
+                "app": "payment-service"
+              }
+            },
+            "maxSkew": 1,
+            "topologyKey": "topology.kubernetes.io/zone",
+            "whenUnsatisfiable": "DoNotSchedule"
+          }
+        ],
+        "volumes": [
+          {
+            "emptyDir": {},
+            "name": "tmp"
+          }
+        ]
+      }
+    }
+  }
+}

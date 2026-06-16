@@ -1,29 +1,20 @@
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"auth-service","namespace":"novapay-prod"},"spec":{"ports":[{"port":80,"targetPort":3001}],"selector":{"app":"auth-service"}}}
-  creationTimestamp: "2026-05-20T11:10:08Z"
-  name: auth-service
-  namespace: novapay-prod
-  resourceVersion: "143951"
-  uid: 5bf8272b-fac2-4920-9cdd-c84125036cbb
-spec:
-  clusterIP: 172.20.195.231
-  clusterIPs:
-  - 172.20.195.231
-  internalTrafficPolicy: Cluster
-  ipFamilies:
-  - IPv4
-  ipFamilyPolicy: SingleStack
-  ports:
-  - port: 80
-    protocol: TCP
-    targetPort: 3001
-  selector:
-    app: auth-service
-  sessionAffinity: None
-  type: ClusterIP
-status:
-  loadBalancer: {}
+{
+  "apiVersion": "v1",
+  "kind": "Service",
+  "metadata": {
+    "name": "auth-service",
+    "namespace": "novapay-prod"
+  },
+  "spec": {
+    "ports": [
+      {
+        "port": 80,
+        "targetPort": 3001
+      }
+    ],
+    "selector": {
+      "app": "auth-service"
+    },
+    "type": "ClusterIP"
+  }
+}
