@@ -156,16 +156,17 @@ echo "==== Installing Karpenter ===="
 helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter \
   --version "1.0.0" \
   --namespace kube-system \
+  --set-json "serviceAccount.annotations={\"eks.amazonaws.com/role-arn\":\"arn:aws:iam::283298108838:role/KarpenterControllerRole-novapay-prod-eks-v2\"}" \
   --set "settings.clusterName=${CLUSTER_NAME}" \
   --set "settings.interruptionQueue=${CLUSTER_NAME}" \
-  --set controller.resources.requests.cpu=1 \
-  --set controller.resources.requests.memory=1Gi \
-  --set controller.resources.limits.cpu=1 \
-  --set controller.resources.limits.memory=1Gi \
+  --set controller.resources.requests.cpu=250m \
+  --set controller.resources.requests.memory=256Mi \
+  --set controller.resources.limits.cpu=500m \
+  --set controller.resources.limits.memory=512Mi \
   --set 'controller.tolerations[0].key=CriticalAddonsOnly' \
   --set 'controller.tolerations[0].operator=Exists' \
   --set 'controller.tolerations[0].effect=NoSchedule' \
-  --wait --timeout 120s
+  --no-hooks --wait --timeout 300s
 
 echo ">>> Waiting for Karpenter pods..."
 kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=karpenter \
@@ -864,7 +865,7 @@ helm upgrade --install argo-rollouts argo/argo-rollouts \
   --set controller.resources.requests.memory=128Mi \
   --set controller.resources.limits.cpu=200m \
   --set controller.resources.limits.memory=256Mi \
-  --wait --timeout 120s
+  --no-hooks --wait --timeout 300s
 echo "  Argo Rollouts installed"
 
 # -- Convert payment-service to Blue/Green ------------------------------------
