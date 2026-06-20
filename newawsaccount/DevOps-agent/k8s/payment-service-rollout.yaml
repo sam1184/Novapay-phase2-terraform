@@ -1,0 +1,139 @@
+# payment-service-rollout.yaml
+# Replaces the payment-service Deployment with an Argo Rollout.
+# Canary strategy: 1 pod (≈33%) gets the new version first.
+# AnalysisTemplate queries the real CloudWatch metric published by the
+# metrics-publisher sidecar to gate promotion and trigger auto-rollback.
+#
+# Install Argo Rollouts first:
+#   kubectl create namespace argo-rollouts
+#   kubectl apply -n argo-rollouts -f \
+#     https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: payment-service
+  namespace: novapay-prod
+  labels:
+    app: payment-service
+    tier: money
+  annotations:
+    novapay.io/version: "v1.0.0"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+        tier: money
+    spec:
+      serviceAccountName: payment-sa
+      containers:
+        - name: payment-service
+          image: public.ecr.aws/docker/library/python:3.11-slim
+          command: ["python", "/app/app.py"]
+          env:
+            - name: ROLE
+              value: "payment"
+            - name: TOKEN_FORMAT
+              value: "v1"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: app
+              mountPath: /app
+            - name: accesslog
+              mountPath: /var/log/app
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits:   { cpu: 250m, memory: 128Mi }
+        - name: metrics-publisher
+          image: public.ecr.aws/aws-cli/aws-cli:latest
+          command: ["sh", "/scripts/publish.sh"]
+          env:
+            - name: AWS_DEFAULT_REGION
+              value: "us-east-1"
+            - name: METRIC_NS
+              value: "NovaPay/payment-service"
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+            - name: accesslog
+              mountPath: /var/log/app
+          resources:
+            requests: { cpu: 25m, memory: 48Mi }
+            limits:   { cpu: 100m, memory: 96Mi }
+      volumes:
+        - name: app
+          configMap: { name: payment-app }
+        - name: scripts
+          configMap: { name: payment-metrics }
+        - name: accesslog
+          emptyDir: {}
+  strategy:
+    canary:
+      # Step 1: route 1 pod (≈33% of 3 replicas) to canary, run analysis
+      # Step 2: promote to 100% if analysis passes
+      steps:
+        - setWeight: 33          # 1 of 3 pods gets new version
+        - analysis:
+              templates:
+                - templateName: payment-error-rate
+              args:
+                - name: service-name
+                  value: payment-service
+        - setWeight: 100
+      # Auto-rollback if AnalysisRun fails
+      autoPromotionEnabled: false
+      # Keep 1 old pod available during canary (maxUnavailable=0)
+      maxUnavailable: 0
+      maxSurge: 1
+---
+# AnalysisTemplate: queries the real CloudWatch 5xx error-rate metric.
+# Rolls back automatically if error rate exceeds 5% during the canary window.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: payment-error-rate
+  namespace: novapay-prod
+spec:
+  args:
+    - name: service-name
+  metrics:
+    - name: error-rate
+      # Check every 60s for up to 5 minutes (5 measurements)
+      interval: 60s
+      count: 5
+      # Fail immediately if any single measurement exceeds 5%
+      failureCondition: "result[0] > 5"
+      failureLimit: 1
+      provider:
+        cloudWatch:
+          interval: 60s
+          metricDataQueries:
+            - id: errors
+              metricStat:
+                metric:
+                  namespace: NovaPay/payment-service
+                  metricName: Http5xxCount
+                period: 60
+                stat: Sum
+              returnData: false
+            - id: requests
+              metricStat:
+                metric:
+                  namespace: NovaPay/payment-service
+                  metricName: HttpRequestCount
+                period: 60
+                stat: Sum
+              returnData: false
+            - id: errpct
+              expression: "100*(errors/requests)"
+              label: "5xx error rate %"
+              returnData: true

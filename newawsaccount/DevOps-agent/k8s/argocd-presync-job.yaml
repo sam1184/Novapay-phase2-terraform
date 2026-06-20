@@ -1,0 +1,118 @@
+# argocd-presync-job.yaml
+# ArgoCD PreSync hook: runs the version compatibility check before any sync.
+# Apply this to the same namespace as the ArgoCD Application, or include it
+# in the Git repo that ArgoCD watches.
+#
+# ArgoCD will run this Job before applying manifests.  If the Job fails,
+# the sync is aborted with a clear error message.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pre-deploy-version-check
+  namespace: novapay-prod
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 0        # fail fast — no retries; a mismatch won't fix itself
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: pre-deploy-checker-sa   # see RBAC below
+      containers:
+        - name: checker
+          image: bitnami/kubectl:latest
+          env:
+            - name: NAMESPACE
+              value: novapay-prod
+            # Set DEPLOY_SERVICE and NEW_TOKEN_FORMAT in the ArgoCD Application
+            # parameters or via a Helm value / Kustomize patch.
+            # Example: override via ArgoCD app parameter:
+            #   argocd app set novapay-payment \
+            #     --parameter DEPLOY_SERVICE=payment-service \
+            #     --parameter NEW_TOKEN_FORMAT=v2
+            - name: DEPLOY_SERVICE
+              valueFrom:
+                configMapKeyRef:
+                  name: deploy-params
+                  key: DEPLOY_SERVICE
+                  optional: true
+            - name: NEW_TOKEN_FORMAT
+              valueFrom:
+                configMapKeyRef:
+                  name: deploy-params
+                  key: NEW_TOKEN_FORMAT
+                  optional: true
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              NS="${NAMESPACE:-novapay-prod}"
+              DEPLOY_SERVICE="${DEPLOY_SERVICE:-}"
+              NEW_FORMAT="${NEW_TOKEN_FORMAT:-}"
+
+              echo "=== NovaPay Pre-Deployment Version Compatibility Check ==="
+              if [[ -z "${DEPLOY_SERVICE}" || -z "${NEW_FORMAT}" ]]; then
+                echo "DEPLOY_SERVICE / NEW_TOKEN_FORMAT not configured — skipping (pass-through)"
+                exit 0
+              fi
+
+              echo "Deploying: ${DEPLOY_SERVICE}  new-format: ${NEW_FORMAT}"
+
+              case "${DEPLOY_SERVICE}" in
+                payment-service)
+                  PEER=$(kubectl get deploy auth-service -n "${NS}" \
+                    -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="AUTH_TOKEN_FORMAT")].value}' 2>/dev/null || echo "v1")
+                  echo "auth-service currently issues: ${PEER}"
+                  if [[ "${PEER}" != "${NEW_FORMAT}" ]]; then
+                    echo "BLOCK: payment-service will expect '${NEW_FORMAT}' but auth issues '${PEER}'. Deploy auth-service first."
+                    exit 1
+                  fi
+                  ;;
+                auth-service)
+                  PEER=$(kubectl get deploy payment-service -n "${NS}" \
+                    -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="TOKEN_FORMAT")].value}' 2>/dev/null || echo "v1")
+                  echo "payment-service currently expects: ${PEER}"
+                  if [[ "${PEER}" != "${NEW_FORMAT}" ]]; then
+                    echo "BLOCK: auth-service will issue '${NEW_FORMAT}' but payment expects '${PEER}'. Update payment-service first."
+                    exit 1
+                  fi
+                  ;;
+                *)
+                  echo "Unknown service '${DEPLOY_SERVICE}' — allowing deploy"
+                  ;;
+              esac
+              echo "=== Pre-deployment check PASSED ==="
+---
+# RBAC: allow the hook pod to read Deployments in novapay-prod
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pre-deploy-checker-sa
+  namespace: novapay-prod
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pre-deploy-checker
+  namespace: novapay-prod
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pre-deploy-checker
+  namespace: novapay-prod
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pre-deploy-checker
+subjects:
+  - kind: ServiceAccount
+    name: pre-deploy-checker-sa
+    namespace: novapay-prod
