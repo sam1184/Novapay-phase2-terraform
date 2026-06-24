@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NovaPay — Module 3+4 // Blue/Green Execution Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,800;0,9..144,900;1,9..144,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0a0e0d;--paper:#ebe6dc;--paper-warm:#e3dccf;--accent:#ff5722;--accent-2:#f4a300;--blueprint:#0f3a5f;--blueprint-line:rgba(15,58,95,0.18);--danger:#c0392b;--success:#2d6a4f;--muted:#6b655d;--problem-bg:#1a1f1e;--problem-ink:#f4ede0;--lab-bg:#0a1f33;--lab-ink:#d4e4f4;--code-bg:#0d1117;--code-ink:#c9d1d9;--code-comment:#7a8087;--code-keyword:#ff7b72;--code-string:#a5d6a4;--code-func:#79c0ff;--warn-bg:#fef4d8;}
+*{box-sizing:border-box;margin:0;padding:0;}html{scroll-behavior:smooth;}
+body{font-family:'Fraunces',Georgia,serif;background:var(--paper);color:var(--ink);line-height:1.55;font-size:17px;background-image:radial-gradient(circle at 20% 10%,rgba(255,87,34,0.04) 0%,transparent 50%),radial-gradient(circle at 80% 80%,rgba(15,58,95,0.05) 0%,transparent 50%);background-attachment:fixed;}
+body::before{content:"";position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");pointer-events:none;z-index:1;mix-blend-mode:multiply;}
+.wrap{position:relative;z-index:2;}
+.hero{padding:50px 6vw 60px;border-bottom:2px solid var(--ink);position:relative;overflow:hidden;}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--blueprint-line) 1px,transparent 1px),linear-gradient(90deg,var(--blueprint-line) 1px,transparent 1px);background-size:40px 40px;opacity:0.5;pointer-events:none;}
+.hero-top{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--ink);padding-bottom:12px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.15em;position:relative;z-index:2;flex-wrap:wrap;gap:8px;}
+.hero-top .stamp{background:var(--accent);color:var(--paper);padding:4px 10px;transform:rotate(-2deg);display:inline-block;}
+.hero-title{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(38px,8vw,130px);line-height:0.85;letter-spacing:-0.04em;margin-top:30px;position:relative;z-index:2;}
+.hero-title .slash{color:var(--accent);font-style:italic;font-weight:400;}
+.hero-title .small{display:block;font-size:0.22em;font-weight:400;font-style:italic;letter-spacing:0em;color:var(--muted);margin-top:24px;line-height:1.35;max-width:780px;}
+.hero-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:50px;position:relative;z-index:2;padding-top:24px;border-top:1px solid var(--ink);}
+.hero-meta>div{font-family:'JetBrains Mono',monospace;font-size:12px;}
+.hero-meta strong{display:block;font-size:10px;text-transform:uppercase;letter-spacing:0.2em;color:var(--muted);margin-bottom:6px;font-weight:500;}
+.hero-meta span{font-size:17px;font-weight:700;font-family:'Fraunces',serif;}
+.hero-quote{position:relative;z-index:2;margin-top:40px;font-style:italic;font-size:19px;max-width:760px;border-left:3px solid var(--accent);padding:6px 0 6px 22px;}
+.incident-banner{background:#3d0000;border-left:6px solid var(--danger);padding:28px 36px;position:relative;margin:0;}
+.incident-banner::before{content:"⚠ THE MARCH INCIDENT — WHY THIS MODULE EXISTS";position:absolute;top:-11px;left:22px;background:var(--danger);color:#fff;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.25em;padding:3px 12px;font-weight:700;}
+.incident-banner p{font-family:'Space Grotesk',sans-serif;font-size:15px;color:#f4a0a0;line-height:1.6;margin-bottom:10px;}
+.req-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px;}
+.req-pill{background:rgba(255,0,0,0.15);border:1px solid rgba(255,100,100,0.3);padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;}
+.req-pill strong{color:#ff9090;display:block;margin-bottom:4px;letter-spacing:0.1em;}
+.req-pill span{color:#c0a0a0;}
+.rules{padding:50px 6vw;background:var(--ink);color:var(--paper);border-bottom:2px solid var(--ink);}
+.rules-title{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.25em;text-transform:uppercase;margin-bottom:26px;color:var(--accent-2);}
+.rules-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;}
+.rule{border-left:3px solid var(--accent);padding:12px 0 12px 18px;}
+.rule-num{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:0.15em;margin-bottom:6px;}
+.rule h4{font-family:'Fraunces',serif;font-size:18px;font-weight:700;font-style:italic;margin-bottom:8px;}
+.rule p{font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--paper-warm);line-height:1.5;}
+.toc{padding:50px 6vw;background:var(--paper-warm);border-bottom:2px solid var(--ink);}
+.toc-title{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.25em;text-transform:uppercase;margin-bottom:26px;color:var(--accent);}
+.toc-list{list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+.toc-list li{background:var(--paper);border:1px solid var(--ink);padding:18px 20px;transition:transform 0.15s;}
+.toc-list li:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink);}
+.toc-list a{color:var(--ink);text-decoration:none;font-family:'Space Grotesk',sans-serif;}
+.toc-num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:12px;font-weight:700;letter-spacing:0.1em;}
+.toc-text{display:block;margin-top:4px;font-family:'Fraunces',serif;font-size:18px;font-weight:700;line-height:1.2;}
+.toc-tag{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;letter-spacing:0.1em;text-transform:uppercase;display:block;}
+.problem{padding:60px 6vw 60px;border-bottom:1px solid var(--ink);position:relative;}
+.problem:nth-child(even){background:var(--paper-warm);}
+.problem-header{display:grid;grid-template-columns:auto 1fr auto;gap:24px;align-items:end;border-bottom:3px solid var(--ink);padding-bottom:24px;margin-bottom:40px;}
+.problem-num{font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:100px;line-height:0.8;color:var(--accent);letter-spacing:-0.04em;}
+.problem-titles h2{font-family:'Fraunces',serif;font-weight:800;font-size:clamp(22px,3.5vw,44px);line-height:0.95;letter-spacing:-0.02em;margin-bottom:8px;}
+.problem-titles .tagline{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);}
+.problem-meta{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;background:var(--ink);color:var(--paper);padding:10px 14px;align-self:start;line-height:1.6;}
+.problem-meta .row{display:block;}.problem-meta .row+.row{margin-top:4px;}
+.problem-meta strong{color:var(--accent-2);}
+.part-header{background:var(--problem-bg);color:var(--problem-ink);padding:24px 32px;margin:48px 0 0;border-left:6px solid var(--accent);position:relative;}
+.part-header::before{content:attr(data-part);position:absolute;top:-11px;left:20px;background:var(--accent);color:#fff;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.25em;padding:3px 10px;font-weight:700;}
+.part-header h3{font-family:'Fraunces',serif;font-size:clamp(20px,2.5vw,32px);font-weight:800;line-height:1.1;margin-bottom:8px;}
+.part-header p{font-family:'Space Grotesk',sans-serif;font-size:14px;color:#a8a090;line-height:1.55;}
+.section{margin:32px 0;display:grid;grid-template-columns:130px 1fr;gap:36px;align-items:start;}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;padding:8px 12px;border:1px solid var(--ink);background:var(--paper);text-align:center;font-weight:700;position:sticky;top:20px;}
+.section-label.scenario{background:var(--problem-bg);color:var(--problem-ink);border-color:var(--problem-bg);}
+.section-label.mindmap{background:var(--blueprint);color:var(--paper);border-color:var(--blueprint);}
+.section-label.flow{background:#1a3a1a;color:#a8d5a8;border-color:#1a3a1a;}
+.section-label.step{background:var(--problem-bg);color:var(--accent-2);border-color:var(--problem-bg);}
+.section-label.verify{background:var(--success);color:var(--paper);border-color:var(--success);}
+.section-label.practices{background:var(--blueprint);color:var(--paper);border-color:var(--blueprint);}
+.section-label.deliver{background:var(--accent);color:var(--paper);border-color:var(--accent);}
+.section-label.gotcha{background:var(--danger);color:var(--paper);border-color:var(--danger);}
+.section-label.review{background:var(--accent-2);color:var(--ink);border-color:var(--accent-2);}
+.section-label.complete{background:var(--success);color:var(--paper);border-color:var(--success);}
+.section-label.arch{background:#060e18;color:#79c0ff;border-color:#1e2d3d;}
+.section-label.why{background:#2a1f1a;color:var(--accent-2);border-color:#3a2e00;}
+.section-label.summary{background:#1a0060;color:#c8b8ff;border-color:#1a0060;}
+.section-body p{margin-bottom:14px;}
+.scenario-box{background:var(--problem-bg);color:var(--problem-ink);padding:32px 36px;border-left:6px solid var(--accent);font-family:'Space Grotesk',sans-serif;position:relative;}
+.scenario-box::before{content:"THE SCENARIO";position:absolute;top:-10px;left:28px;background:var(--accent);color:var(--paper);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;padding:3px 10px;font-weight:700;}
+.scenario-box .lede{font-family:'Fraunces',serif;font-style:italic;font-size:20px;line-height:1.4;margin-bottom:18px;color:#fff;}
+.scenario-box p{font-size:15px;line-height:1.6;margin-bottom:12px;}
+.diagram{background:#fafafa;border:1px solid var(--ink);padding:22px;margin:16px 0;text-align:center;position:relative;overflow-x:auto;}
+.diagram::before{content:attr(data-fig);position:absolute;top:8px;left:14px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--muted);}
+.diagram svg{max-width:100%;height:auto;}
+.step-box{background:#fff;border:1px solid var(--ink);padding:28px 32px;margin:18px 0;position:relative;font-family:'Space Grotesk',sans-serif;}
+.step-box-header{display:flex;align-items:baseline;gap:16px;border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:18px;flex-wrap:wrap;}
+.step-num{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--accent);letter-spacing:0.15em;white-space:nowrap;}
+.step-box h4{font-family:'Fraunces',serif;font-size:22px;font-weight:800;line-height:1;color:var(--ink);}
+.step-time{font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--ink);color:var(--accent-2);padding:3px 8px;letter-spacing:0.1em;margin-left:auto;white-space:nowrap;}
+.why-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:6px;}
+.why-text{font-family:'Space Grotesk',sans-serif;font-size:15px;color:#3a3530;line-height:1.6;margin-bottom:18px;border-left:3px solid var(--accent-2);background:rgba(244,163,0,0.06);padding:10px 14px;}
+pre,.code-block{background:var(--code-bg);color:var(--code-ink);padding:22px 60px 22px 26px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.65;overflow-x:auto;margin:14px 0;border-left:3px solid var(--accent);position:relative;white-space:pre;tab-size:2;}
+pre::before{content:attr(data-lang);position:absolute;top:8px;right:70px;font-size:10px;color:var(--code-comment);letter-spacing:0.15em;text-transform:uppercase;}
+pre.verify-block{border-left-color:#2d6a4f;}
+pre.verify-block::after{content:"VERIFY";position:absolute;top:8px;left:14px;font-size:10px;color:#3fb950;letter-spacing:0.15em;font-weight:700;}
+.tok-c{color:var(--code-comment);font-style:italic;}.tok-k{color:var(--code-keyword);}.tok-s{color:var(--code-string);}.tok-f{color:var(--code-func);}.tok-n{color:#d2a8ff;}.tok-v{color:#e3b341;}
+.copy-wrap{position:relative;}
+.copy-btn{position:absolute;top:0;right:0;background:#1f6feb;border:none;color:#ffffff;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;letter-spacing:0.14em;padding:7px 18px;cursor:pointer;transition:all 0.18s;z-index:5;text-transform:uppercase;min-width:72px;text-align:center;}
+.copy-btn:hover{background:#388bfd;box-shadow:0 0 14px rgba(56,139,253,0.5);}
+.copy-btn.copied{background:#1a3a1a;color:#3fb950;box-shadow:0 0 10px rgba(63,185,80,0.4);}
+.practices-box{background:rgba(255,87,34,0.04);border-top:2px solid var(--accent);border-bottom:2px solid var(--accent);padding:22px 26px;margin:18px 0;}
+.practices-box h5{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.25em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:12px;}
+.practices-box ul{list-style:none;padding:0;}
+.practices-box ul li{font-family:'Space Grotesk',sans-serif;font-size:14.5px;padding-left:26px;position:relative;margin:9px 0;line-height:1.55;color:#3a3530;}
+.practices-box ul li::before{content:"▸";position:absolute;left:4px;color:var(--accent);font-weight:700;}
+.practices-box code{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--ink);color:var(--accent-2);padding:2px 7px;border-radius:2px;}
+.deliver-box{background:var(--lab-bg);color:var(--lab-ink);padding:32px 36px;margin:18px 0;position:relative;box-shadow:8px 8px 0 var(--accent);}
+.deliver-box::before{content:"▶ DELIVERABLES";position:absolute;top:-12px;left:28px;background:var(--accent);color:#fff;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.25em;padding:4px 12px;font-weight:700;}
+.deliver-box h4{font-family:'Fraunces',serif;font-size:22px;color:#fff;margin-bottom:14px;font-weight:700;}
+.deliver-box ol{padding-left:24px;font-family:'Space Grotesk',sans-serif;font-size:15px;}
+.deliver-box ol li{margin:8px 0;color:var(--lab-ink);}
+.deliver-box ol li strong{color:#fff;}
+.gotcha-box{background:var(--danger);color:#fff;padding:26px 30px;margin:18px 0;border-left:6px solid #000;position:relative;}
+.gotcha-box::before{content:"✱ DON'T FALL FOR THESE";position:absolute;top:-11px;left:22px;background:#000;color:var(--accent-2);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;padding:3px 10px;font-weight:700;}
+.gotcha-box h4{font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:12px;}
+.gotcha-box ul{list-style:none;padding:0;font-family:'Space Grotesk',sans-serif;font-size:14.5px;}
+.gotcha-box ul li{padding-left:26px;position:relative;margin:10px 0;line-height:1.5;}
+.gotcha-box ul li::before{content:"✗";position:absolute;left:4px;color:var(--accent-2);font-weight:700;}
+.gotcha-box code{font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(0,0,0,0.3);padding:2px 6px;}
+.review-box{background:var(--warn-bg);border:1px solid var(--ink);padding:26px 30px;margin:18px 0;position:relative;}
+.review-box::before{content:"▣ ARCHITECT'S REVIEW RUBRIC";position:absolute;top:-11px;left:22px;background:var(--ink);color:var(--accent-2);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;padding:3px 10px;font-weight:700;}
+.review-box h4{font-family:'Fraunces',serif;font-size:19px;font-weight:700;margin-bottom:12px;font-style:italic;}
+.review-box .rubric{display:grid;grid-template-columns:80px 1fr;gap:8px 18px;font-family:'Space Grotesk',sans-serif;font-size:14px;align-items:center;}
+.review-box .rubric .pts{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--accent);border-right:1px solid var(--ink);padding-right:12px;}
+.complete-box{background:#0d2b0d;color:#a8d5a8;padding:32px 36px;border-left:6px solid #3fb950;position:relative;margin:18px 0;}
+.complete-box::before{content:"✓ MODULE COMPLETE";position:absolute;top:-11px;left:22px;background:#3fb950;color:#0d1117;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;padding:3px 10px;font-weight:700;}
+.complete-box h4{font-family:'Fraunces',serif;font-size:21px;font-weight:700;color:#3fb950;margin-bottom:14px;}
+.complete-box ul{list-style:none;padding:0;font-family:'Space Grotesk',sans-serif;font-size:14.5px;}
+.complete-box ul li{padding-left:22px;position:relative;margin:8px 0;line-height:1.5;}
+.complete-box ul li::before{content:"✓";position:absolute;left:2px;color:#3fb950;font-weight:700;}
+.note-box{background:rgba(244,163,0,0.10);border-left:3px solid var(--accent-2);padding:10px 16px;margin:14px 0;font-family:'Space Grotesk',sans-serif;font-size:14px;font-style:italic;color:#3a3530;}
+.note-box strong{font-style:normal;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--accent-2);display:block;margin-bottom:4px;font-weight:700;}
+.war-story{background:#2a1f1a;color:#f4ede0;padding:22px 28px;border-left:4px solid var(--accent-2);margin:18px 0;font-family:'Fraunces',serif;font-style:italic;position:relative;font-size:16px;}
+.war-story::before{content:"✷ THE MARCH INCIDENT";display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--accent-2);margin-bottom:8px;font-style:normal;font-weight:700;}
+.concept-table-wrap{background:#fff;border:1px solid var(--ink);overflow:hidden;margin:18px 0;}
+.concept-table-wrap table{width:100%;border-collapse:collapse;font-family:'Space Grotesk',sans-serif;font-size:13.5px;}
+.concept-table-wrap th{background:var(--ink);color:var(--paper);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;padding:10px 14px;text-align:left;}
+.concept-table-wrap td{padding:10px 14px;border-bottom:1px solid #d8d2c5;vertical-align:middle;line-height:1.45;}
+.concept-table-wrap tr:last-child td{border-bottom:none;}
+.concept-table-wrap td:first-child{font-weight:700;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);}
+.concept-table-wrap td code{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--code-bg);color:var(--code-string);padding:2px 7px;border-radius:2px;}
+.outro{padding:80px 6vw;background:var(--ink);color:var(--paper);text-align:center;border-top:4px solid var(--accent);}
+.outro h2{font-family:'Fraunces',serif;font-weight:900;font-style:italic;font-size:clamp(32px,5vw,72px);line-height:0.95;letter-spacing:-0.03em;margin-bottom:24px;}
+.outro h2 em{color:var(--accent);font-style:normal;}
+.outro p{font-family:'Fraunces',serif;font-size:19px;font-style:italic;max-width:680px;margin:0 auto 18px;color:var(--paper-warm);}
+.outro .sig{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.3em;color:var(--accent-2);margin-top:50px;}
+.copyright{margin-top:40px;padding-top:28px;border-top:1px solid rgba(235,230,220,0.15);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#6b655d;line-height:1.8;}
+.copyright strong{color:var(--accent-2);}
+@media(max-width:900px){.hero-meta{grid-template-columns:repeat(2,1fr);}.problem-header{grid-template-columns:1fr;gap:10px;}.problem-num{font-size:70px;}.section{grid-template-columns:1fr;gap:10px;}.section-label{position:static;display:inline-block;padding:6px 12px;}}
+@media print{body{font-size:11pt;background:#fff;}body::before{display:none;}.hero-grid{display:none;}pre{page-break-inside:avoid;font-size:10pt;}.section{grid-template-columns:110px 1fr;gap:20px;}.section-label{position:static;}.outro{padding:40px 5vw;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-top">
+    <span>AWS Arch Bootcamp // Execution Workbook</span>
+    <span class="stamp">PRODUCTION</span>
+  </div>
+  <h1 class="hero-title">
+    Blue<span class="slash">/</span>Green<br>Execution
+    <span class="small">NovaPay — Module 3+4 · Blue/Green Release Engineering for Payment-Critical Services<br>Scripts, commands, diagrams and full step-by-step execution from build-v2-images.sh through module3-4-demo.sh</span>
+  </h1>
+  <div class="hero-meta">
+    <div><strong>Scripts</strong><span>2 bash scripts</span></div>
+    <div><strong>Parts</strong><span>E · F · G</span></div>
+    <div><strong>Duration</strong><span>~6 minutes</span></div>
+    <div><strong>Requirement</strong><span>FR-01 · FR-06 · FR-13 · NFR-08</span></div>
+  </div>
+  <div class="hero-quote">"Traffic is 100% on one version at all times. The switch is atomic. The abort takes five seconds. The March incident took forty minutes."</div>
+</header>
+
+<!-- INCIDENT BANNER -->
+<div class="incident-banner">
+  <p>NovaPay processes $2.1M+ daily. A rolling update of payment-service changed the token format. During the ~2 minute transition window, customer calls to POST /auth were served by v1 (v1-format token) and POST /charge was served by v2 (which couldn't parse v1 tokens). Charges failed. 40-minute outage. Two Tier-1 banking clients impacted.</p>
+  <div class="req-grid">
+    <div class="req-pill"><strong>FR-01</strong><span>Independent deploy, zero downtime</span></div>
+    <div class="req-pill"><strong>FR-06</strong><span>Rollback in &lt;60 seconds</span></div>
+    <div class="req-pill"><strong>FR-13</strong><span>Phase 1 behaviour preserved on EKS</span></div>
+    <div class="req-pill"><strong>NFR-08</strong><span>Immutable tags — no :latest ever</span></div>
+  </div>
+</div>
+
+<!-- BLUE/GREEN GUARANTEES -->
+<div class="rules">
+  <div class="rules-title">// Blue/Green Guarantees — What This Module Proves</div>
+  <div class="rules-grid">
+    <div class="rule"><div class="rule-num">GUARANTEE 01</div><h4>Zero Version Mixing</h4><p>100% of traffic goes to ONE version at all times. Token/session compatibility is guaranteed — the March incident cannot happen.</p></div>
+    <div class="rule"><div class="rule-num">GUARANTEE 02</div><h4>Atomic Switch</h4><p>Traffic moves from Blue→Green in a single selector flip. No partial transitions, no "both serving" window. One API call.</p></div>
+    <div class="rule"><div class="rule-num">GUARANTEE 03</div><h4>Instant Rollback</h4><p>Abort = flip selector back in under 5 seconds. Bad deploy never reaches customers. FR-06 massively exceeded.</p></div>
+    <div class="rule"><div class="rule-num">GUARANTEE 04</div><h4>Preview Testing</h4><p>Green runs but receives zero real traffic until promoted. Smoke test before committing. Broken code can't be promoted.</p></div>
+    <div class="rule"><div class="rule-num">GUARANTEE 05</div><h4>Automatic Readiness Gate</h4><p>Green must pass readiness probes before promotion is even offered. Broken image stays in Green — production unaffected.</p></div>
+  </div>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<nav class="toc">
+  <div class="toc-title">// Contents</div>
+  <ul class="toc-list">
+    <li><a href="#sec1"><span class="toc-num">01</span><span class="toc-text">Core Concepts</span><span class="toc-tag">Why Blue/Green for Payments</span></a></li>
+    <li><a href="#sec2"><span class="toc-num">02</span><span class="toc-text">Architecture</span><span class="toc-tag">How Argo Rollouts Works</span></a></li>
+    <li><a href="#sec3"><span class="toc-num">03</span><span class="toc-text">Prerequisites</span><span class="toc-tag">Tools &amp; Cluster State</span></a></li>
+    <li><a href="#sec4"><span class="toc-num">04</span><span class="toc-text">build-v2-images.sh</span><span class="toc-tag">Script 1 — ECR Tagging</span></a></li>
+    <li><a href="#sec5"><span class="toc-num">05</span><span class="toc-text">module3-4-demo.sh</span><span class="toc-tag">Script 2 — Full Demo</span></a></li>
+    <li><a href="#sec6"><span class="toc-num">06</span><span class="toc-text">Part E — Execute</span><span class="toc-tag">Blue/Green Release v1→v2</span></a></li>
+    <li><a href="#sec7"><span class="toc-num">07</span><span class="toc-text">Part F — Rollback</span><span class="toc-tag">March Incident Prevention</span></a></li>
+    <li><a href="#sec8"><span class="toc-num">08</span><span class="toc-text">Part G — Comparison</span><span class="toc-tag">Rolling Update vs Blue/Green</span></a></li>
+    <li><a href="#sec9"><span class="toc-num">09</span><span class="toc-text">Production at Scale</span><span class="toc-tag">Capacity, Multi-AZ, PDB</span></a></li>
+    <li><a href="#sec10"><span class="toc-num">10</span><span class="toc-text">Operational Runbook</span><span class="toc-tag">Deploy, Rollback, History</span></a></li>
+    <li><a href="#sec11"><span class="toc-num">11</span><span class="toc-text">Troubleshooting</span><span class="toc-tag">8 Known Failure Patterns</span></a></li>
+  </ul>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 1 — CORE CONCEPTS
+════════════════════════════════════════════════════ -->
+<section class="problem" id="sec1">
+  <div class="problem-header">
+    <div class="problem-num">01</div>
+    <div class="problem-titles">
+      <h2>Core Concepts</h2>
+      <div class="tagline">Why Blue/Green for Payment-Critical Services</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>TYPE</strong> Concept</span>
+      <span class="row"><strong>APPLIES TO</strong> payment-service · auth-service</span>
+      <span class="row"><strong>NOT FOR</strong> kyc-service · webhook-service</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label scenario">The Problem</div>
+    <div class="section-body">
+      <div class="war-story">
+        In a standard Kubernetes rolling update, old and new pods serve traffic simultaneously during the transition period. For stateless services with no cross-request coupling, this is fine. But for services where requests are correlated across versions — authentication tokens issued by v1 consumed by v2 — version mixing causes failures. NovaPay's March incident was exactly this: POST /auth (v1) issued a token in v1-format; POST /charge (v2) couldn't parse it. 40 minutes of outage. Two Tier-1 banking clients impacted.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label arch">Strategy Map</div>
+    <div class="section-body">
+      <!-- VENN DIAGRAM: When to use Blue/Green vs Rolling Update -->
+      <div class="diagram" data-fig="FIG 1.1 — Blue/Green vs Rolling Update: when each strategy applies">
+        <svg viewBox="0 0 820 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;height:auto;">
+          <rect width="820" height="340" fill="#f8f5f0"/>
+          <!-- Left circle — Blue/Green -->
+          <ellipse cx="280" cy="170" rx="230" ry="130" fill="rgba(45,106,79,0.12)" stroke="#2d6a4f" stroke-width="2"/>
+          <!-- Right circle — Rolling Update -->
+          <ellipse cx="540" cy="170" rx="230" ry="130" fill="rgba(15,58,95,0.10)" stroke="#0f3a5f" stroke-width="2"/>
+          <!-- Labels -->
+          <text x="160" y="80" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="700" fill="#2d6a4f">BLUE/GREEN</text>
+          <text x="160" y="96" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#2d6a4f">Use When</text>
+          <text x="660" y="80" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="700" fill="#0f3a5f">ROLLING UPDATE</text>
+          <text x="660" y="96" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#0f3a5f">Use When</text>
+          <!-- Blue/Green bullets -->
+          <text x="100" y="130" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#1a3a2a">▸ Cross-request state coupling</text>
+          <text x="100" y="150" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#1a3a2a">▸ Tokens/sessions across services</text>
+          <text x="100" y="170" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#1a3a2a">▸ Both versions MUST NOT coexist</text>
+          <text x="100" y="190" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#1a3a2a">▸ Instant rollback is hard req</text>
+          <text x="100" y="210" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#1a3a2a">▸ Can afford 2× pods in transition</text>
+          <text x="85" y="240" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#ff5722">e.g. payment-service · auth-service</text>
+          <!-- Rolling Update bullets -->
+          <text x="440" y="130" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#0a1f33">▸ Stateless, no cross-req coupling</text>
+          <text x="440" y="150" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#0a1f33">▸ Brief version mixing acceptable</text>
+          <text x="440" y="170" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#0a1f33">▸ Resource efficiency matters</text>
+          <text x="440" y="190" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#0a1f33">▸ PDB provides enough protection</text>
+          <text x="440" y="210" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#0a1f33">▸ Rolling rollback is sufficient</text>
+          <text x="450" y="240" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#3b7dca">e.g. kyc-service · webhook-service</text>
+          <!-- Overlap zone -->
+          <text x="410" y="160" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#6b655d">BOTH</text>
+          <text x="410" y="175" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#6b655d">Helm-managed</text>
+          <text x="410" y="190" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#6b655d">HPA + PDB</text>
+          <text x="410" y="205" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#6b655d">Readiness gates</text>
+          <!-- Bottom label -->
+          <text x="410" y="310" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#6b655d">The overlap is the foundation. The difference is the traffic atomicity guarantee.</text>
+        </svg>
+      </div>
+
+      <div class="concept-table-wrap">
+        <table>
+          <thead><tr><th>Property</th><th>What It Means</th><th>Why It Matters for NovaPay</th></tr></thead>
+          <tbody>
+            <tr><td>Zero version mixing</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">100% of traffic goes to ONE version at all times</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Token/session compatibility guaranteed between auth and charge</td></tr>
+            <tr><td>Atomic switch</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Traffic moves Blue→Green in a single selector flip</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">No partial transitions, no "both serving" window</td></tr>
+            <tr><td>Instant rollback</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Abort = flip selector back (&lt;5 seconds)</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Bad deploy never reaches customers — FR-06 proven</td></tr>
+            <tr><td>Preview testing</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Green runs but receives zero real traffic until promoted</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Smoke test before committing to production traffic</td></tr>
+            <tr><td>Automatic readiness gate</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Green must pass readiness probes before promotion is offered</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Broken code structurally cannot be promoted</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 2 — ARCHITECTURE
+════════════════════════════════════════════════════ -->
+<section class="problem" id="sec2">
+  <div class="problem-header">
+    <div class="problem-num">02</div>
+    <div class="problem-titles">
+      <h2>Architecture</h2>
+      <div class="tagline">How Argo Rollouts Manages Blue/Green Traffic</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>TYPE</strong> Architecture</span>
+      <span class="row"><strong>CLUSTER</strong> novapay-prod-eks-v2</span>
+      <span class="row"><strong>NAMESPACE</strong> novapay-prod</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label arch">Component Map</div>
+    <div class="section-body">
+      <div class="diagram" data-fig="FIG 2.1 — NovaPay Blue/Green Architecture: Argo Rollouts controller, two Services, two ReplicaSets">
+        <svg viewBox="0 0 820 380" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;height:auto;">
+          <defs>
+            <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#ff5722"/></marker>
+            <marker id="arrg" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#2d6a4f"/></marker>
+            <marker id="arrb" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#3b7dca"/></marker>
+          </defs>
+          <rect width="820" height="380" fill="#0d1117"/>
+          <!-- Argo controller -->
+          <rect x="290" y="20" width="240" height="70" rx="4" fill="none" stroke="#ff5722" stroke-width="2"/>
+          <rect x="290" y="20" width="240" height="6" rx="2" fill="#ff5722"/>
+          <text x="410" y="50" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="700" fill="#ff5722">Argo Rollouts Controller</text>
+          <text x="410" y="67" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#7a8087">Watches Rollout resources</text>
+          <text x="410" y="82" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#7a8087">Manages selector flips</text>
+          <!-- manages arrow -->
+          <line x1="350" y1="90" x2="230" y2="158" stroke="#ff5722" stroke-width="1.5" marker-end="url(#arr)"/>
+          <line x1="470" y1="90" x2="590" y2="158" stroke="#ff5722" stroke-width="1.5" marker-end="url(#arr)"/>
+          <text x="410" y="130" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#7a8087">↓ manages ↓</text>
+          <!-- Active service -->
+          <rect x="80" y="160" width="230" height="90" rx="4" fill="none" stroke="#2d6a4f" stroke-width="2"/>
+          <rect x="80" y="160" width="230" height="5" fill="#2d6a4f"/>
+          <text x="195" y="184" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#3fb950">payment-service-active</text>
+          <text x="195" y="200" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#7a8087">Service (ClusterIP)</text>
+          <text x="195" y="216" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#3fb950">100% production traffic</text>
+          <text x="195" y="232" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#7a8087">selector → BLUE pods</text>
+          <!-- Preview service -->
+          <rect x="510" y="160" width="230" height="90" rx="4" fill="none" stroke="#3b7dca" stroke-width="2"/>
+          <rect x="510" y="160" width="230" height="5" fill="#3b7dca"/>
+          <text x="625" y="184" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#79c0ff">payment-service-preview</text>
+          <text x="625" y="200" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#7a8087">Service (ClusterIP)</text>
+          <text x="625" y="216" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#79c0ff">0% real traffic</text>
+          <text x="625" y="232" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#7a8087">selector → GREEN pods</text>
+          <!-- routes to -->
+          <line x1="160" y1="250" x2="160" y2="298" stroke="#2d6a4f" stroke-width="1.5" marker-end="url(#arrg)"/>
+          <line x1="625" y1="250" x2="625" y2="298" stroke="#3b7dca" stroke-width="1.5" marker-end="url(#arrb)"/>
+          <text x="410" y="280" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#7a8087">↓ routes to ↓</text>
+          <!-- Blue RS -->
+          <rect x="40" y="300" width="230" height="65" rx="4" fill="#0d2b0d" stroke="#2d6a4f" stroke-width="2"/>
+          <text x="155" y="322" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#3fb950">BLUE ReplicaSet</text>
+          <text x="155" y="338" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#a8d5a8">v1.0.0 · 3 pods · SERVING TRAFFIC</text>
+          <text x="155" y="355" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#7a8087">stable/active</text>
+          <!-- Green RS -->
+          <rect x="510" y="300" width="230" height="65" rx="4" fill="#091a2e" stroke="#3b7dca" stroke-width="2"/>
+          <text x="625" y="322" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#79c0ff">GREEN ReplicaSet</text>
+          <text x="625" y="338" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#d4e4f4">v2.0.0 · 3 pods · PREVIEW ONLY</text>
+          <text x="625" y="355" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#7a8087">canary/preview</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label flow">Release Lifecycle</div>
+    <div class="section-body">
+      <div class="diagram" data-fig="FIG 2.2 — Blue/Green release sequence: 5 phases, zero real traffic on Green until promotion">
+        <svg viewBox="0 0 820 160" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;height:auto;">
+          <defs>
+            <marker id="seq" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#f4a300"/></marker>
+          </defs>
+          <rect width="820" height="160" fill="#0a0e0d"/>
+          <text x="410" y="22" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" letter-spacing="0.2em" fill="#f4a300">BLUE/GREEN RELEASE SEQUENCE</text>
+          <!-- Boxes -->
+          <rect x="20" y="40" width="130" height="75" rx="3" fill="#0d1117" stroke="#f4a300" stroke-width="1.5"/>
+          <text x="85" y="62" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#f4a300">① TRIGGER</text>
+          <text x="85" y="78" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#c9d1d9">Set new image</text>
+          <text x="85" y="93" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#c9d1d9">New RS created</text>
+          <rect x="175" y="40" width="130" height="75" rx="3" fill="#0d1117" stroke="#ff5722" stroke-width="1.5"/>
+          <text x="240" y="62" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#ff5722">② BOOT</text>
+          <text x="240" y="78" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#c9d1d9">Green pods start</text>
+          <text x="240" y="93" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#c9d1d9">Karpenter ~30s</text>
+          <rect x="330" y="40" width="130" height="75" rx="3" fill="#0d1117" stroke="#3b7dca" stroke-width="2"/>
+          <text x="395" y="62" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#79c0ff">③ PAUSE</text>
+          <text x="395" y="78" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#c9d1d9">Green ready</text>
+          <text x="395" y="93" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#79c0ff">Blue still active</text>
+          <rect x="485" y="40" width="130" height="75" rx="3" fill="#0d2b0d" stroke="#2d6a4f" stroke-width="2"/>
+          <text x="550" y="62" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#3fb950">④ PROMOTE</text>
+          <text x="550" y="78" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#c9d1d9">Selector flip</text>
+          <text x="550" y="93" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#3fb950">Atomic &lt;1s</text>
+          <rect x="640" y="40" width="160" height="75" rx="3" fill="#0d1117" stroke="#6b655d" stroke-width="1.5"/>
+          <text x="720" y="62" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#c9d1d9">⑤ CLEANUP</text>
+          <text x="720" y="78" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#c9d1d9">Blue retained 60s</text>
+          <text x="720" y="93" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#c9d1d9">Then terminated</text>
+          <!-- Arrows -->
+          <line x1="150" y1="77" x2="172" y2="77" stroke="#f4a300" stroke-width="1.5" marker-end="url(#seq)"/>
+          <line x1="305" y1="77" x2="327" y2="77" stroke="#f4a300" stroke-width="1.5" marker-end="url(#seq)"/>
+          <line x1="460" y1="77" x2="482" y2="77" stroke="#f4a300" stroke-width="1.5" marker-end="url(#seq)"/>
+          <line x1="615" y1="77" x2="637" y2="77" stroke="#f4a300" stroke-width="1.5" marker-end="url(#seq)"/>
+          <!-- Key property -->
+          <text x="410" y="140" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#f4a300">Key Property: At no point are both versions serving REAL traffic simultaneously</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label arch">Rollout YAML</div>
+    <div class="section-body">
+      <div class="step-box">
+        <div class="step-box-header"><span class="step-num">RESOURCE</span><h4>Rollout Resource — What Argo Rollouts Manages</h4></div>
+        <div class="why-label">// WHY autoPromotionEnabled: false</div>
+        <div class="why-text">Human must approve the promotion. For a payment service processing $2.1M/day, no automated tool should flip production traffic without a human reviewing the preview smoke test. This is the manual gate that prevents automated bad deploys from ever reaching customers.</div>
+      </div>
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="yaml"><span class="tok-k">apiVersion</span>: argoproj.io/v1alpha1
+<span class="tok-k">kind</span>: Rollout
+<span class="tok-k">metadata</span>:
+  <span class="tok-k">name</span>: payment-service
+  <span class="tok-k">namespace</span>: novapay-prod
+<span class="tok-k">spec</span>:
+  <span class="tok-k">replicas</span>: 3
+  <span class="tok-k">strategy</span>:
+    <span class="tok-k">blueGreen</span>:
+      <span class="tok-k">activeService</span>: payment-service-active    <span class="tok-c"># Receives production traffic</span>
+      <span class="tok-k">previewService</span>: payment-service-preview  <span class="tok-c"># Receives zero real traffic</span>
+      <span class="tok-k">autoPromotionEnabled</span>: false               <span class="tok-c"># Human must approve</span>
+      <span class="tok-k">scaleDownDelaySeconds</span>: 60                 <span class="tok-c"># Keep Blue 60s after promotion</span>
+  <span class="tok-k">template</span>:
+    <span class="tok-k">spec</span>:
+      <span class="tok-k">containers</span>:
+        - <span class="tok-k">name</span>: payment-service
+          <span class="tok-k">image</span>: 390402549817.dkr.ecr.us-east-1.amazonaws.com/novapay-poc/charge:v1.0.0
+          <span class="tok-k">readinessProbe</span>:
+            <span class="tok-k">httpGet</span>:
+              <span class="tok-k">path</span>: /health
+              <span class="tok-k">port</span>: 3002
+            <span class="tok-k">initialDelaySeconds</span>: 5
+            <span class="tok-k">periodSeconds</span>: 5</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 3 — PREREQUISITES
+════════════════════════════════════════════════════ -->
+<section class="problem" id="sec3">
+  <div class="problem-header">
+    <div class="problem-num">03</div>
+    <div class="problem-titles">
+      <h2>Prerequisites</h2>
+      <div class="tagline">Tools &amp; Cluster State Required Before Running Scripts</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>TIME</strong> ~5 min setup</span>
+      <span class="row"><strong>MUST HAVE</strong> post-apply.sh done</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label arch">Required Tools</div>
+    <div class="section-body">
+      <div class="concept-table-wrap">
+        <table>
+          <thead><tr><th>Tool</th><th>Version</th><th>Install</th><th>Verify</th></tr></thead>
+          <tbody>
+            <tr><td>AWS CLI</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">v2+</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;">brew install awscli</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;">aws --version</td></tr>
+            <tr><td>kubectl</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">1.28+</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;">brew install kubectl</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;">kubectl version --client</td></tr>
+            <tr><td>helm</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">3.12+</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;">brew install helm</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;">helm version</td></tr>
+            <tr><td>kubectl-argo-rollouts</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">latest</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">See below</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;">kubectl argo rollouts version</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label step">Install Plugin</div>
+    <div class="section-body">
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="bash"><span class="tok-c"># macOS Apple Silicon (M1/M2/M3)</span>
+curl -LO https://github.com/argoproj/argo-rollouts/releases/latest/download/kubectl-argo-rollouts-darwin-arm64
+chmod +x kubectl-argo-rollouts-darwin-arm64
+sudo mv kubectl-argo-rollouts-darwin-arm64 /usr/local/bin/kubectl-argo-rollouts
+
+<span class="tok-c"># macOS Intel</span>
+curl -LO https://github.com/argoproj/argo-rollouts/releases/latest/download/kubectl-argo-rollouts-darwin-amd64
+chmod +x kubectl-argo-rollouts-darwin-amd64
+sudo mv kubectl-argo-rollouts-darwin-amd64 /usr/local/bin/kubectl-argo-rollouts
+
+<span class="tok-c"># Verify</span>
+kubectl argo rollouts version</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label verify">Cluster Check</div>
+    <div class="section-body">
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre class="verify-block" data-lang="bash"><span class="tok-c"># Verify cluster access</span>
+kubectl get nodes
+
+<span class="tok-c"># Verify services running</span>
+kubectl get pods -n novapay-prod
+
+<span class="tok-c"># Verify Argo Rollouts controller</span>
+kubectl get pods -n argo-rollouts
+
+<span class="tok-c"># Verify payment-service Rollout</span>
+kubectl argo rollouts get rollout payment-service -n novapay-prod</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 4 — build-v2-images.sh
+════════════════════════════════════════════════════ -->
+<section class="problem" id="sec4">
+  <div class="problem-header">
+    <div class="problem-num">04</div>
+    <div class="problem-titles">
+      <h2>build-v2-images.sh</h2>
+      <div class="tagline">Script 1 — Create v2.0.0 ECR Tags Without Rebuilding</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>TIME</strong> &lt;30 seconds</span>
+      <span class="row"><strong>IDEMPOTENT</strong> Yes — safe to re-run</span>
+      <span class="row"><strong>REQUIRES</strong> v1.0.0 in ECR</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label scenario">Purpose</div>
+    <div class="section-body">
+      <div class="scenario-box">
+        <div class="lede">Blue/Green needs two distinct image versions. This script creates v2.0.0 by re-tagging the existing v1.0.0 images in ECR using the manifest copy API. No Docker daemon, no CodeBuild, no source code rebuild needed.</div>
+        <p>In a real CI/CD pipeline, v2.0.0 would be a new commit built by CodeBuild/GitHub Actions with a unique SHA-based tag (e.g., v2.1.3-abc123f). The re-tagging approach here is for the lab demo only. In production, every image tag maps to a unique build artifact — never re-tag.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label flow">How It Works</div>
+    <div class="section-body">
+      <div class="diagram" data-fig="FIG 4.1 — ECR manifest copy: batch-get-image fetches JSON manifest, put-image stores it as new tag — no layer transfer">
+        <svg viewBox="0 0 820 140" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;height:auto;">
+          <defs>
+            <marker id="fa" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f4a300"/></marker>
+          </defs>
+          <rect width="820" height="140" fill="#0a0e0d"/>
+          <text x="410" y="22" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" letter-spacing="0.2em" fill="#f4a300">ECR MANIFEST COPY (NO REBUILD REQUIRED)</text>
+          <rect x="30" y="38" width="160" height="70" rx="3" fill="#0d1117" stroke="#ff5722" stroke-width="1.5"/>
+          <text x="110" y="66" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#ff5722">ECR repo</text>
+          <text x="110" y="82" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#c9d1d9">novapay-poc/charge</text>
+          <text x="110" y="97" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#3fb950">has v1.0.0</text>
+          <rect x="230" y="38" width="160" height="70" rx="3" fill="#0d1117" stroke="#f4a300" stroke-width="1.5"/>
+          <text x="310" y="62" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#f4a300">batch-get-image</text>
+          <text x="310" y="78" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#c9d1d9">Fetch image manifest</text>
+          <text x="310" y="93" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#c9d1d9">(JSON metadata)</text>
+          <rect x="430" y="38" width="160" height="70" rx="3" fill="#0d1117" stroke="#2d6a4f" stroke-width="1.5"/>
+          <text x="510" y="62" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#3fb950">put-image</text>
+          <text x="510" y="78" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#c9d1d9">Store same manifest</text>
+          <text x="510" y="93" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#3fb950">as tag "v2.0.0"</text>
+          <rect x="630" y="38" width="160" height="70" rx="3" fill="#0d2b0d" stroke="#3fb950" stroke-width="2"/>
+          <text x="710" y="62" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#3fb950">Done ✓</text>
+          <text x="710" y="78" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#c9d1d9">Same bytes, new tag</text>
+          <text x="710" y="93" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#c9d1d9">Zero network transfer</text>
+          <line x1="190" y1="73" x2="227" y2="73" stroke="#f4a300" stroke-width="1.5" marker-end="url(#fa)"/>
+          <line x1="390" y1="73" x2="427" y2="73" stroke="#f4a300" stroke-width="1.5" marker-end="url(#fa)"/>
+          <line x1="590" y1="73" x2="627" y2="73" stroke="#f4a300" stroke-width="1.5" marker-end="url(#fa)"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label step">Run</div>
+    <div class="section-body">
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="bash">bash build-v2-images.sh</pre>
+      </div>
+      <div class="note-box"><strong>// STEP-BY-STEP LOGIC</strong>
+        1. Verify v1.0.0 exists — calls aws ecr describe-images for each of the 4 services. Exits with error if any are missing.<br>
+        2. Check if v2.0.0 already exists (idempotency) — if all v2.0.0 tags exist, prints "Nothing to do" and exits cleanly. Safe to run 100 times.<br>
+        3. Copy manifests — for each missing v2.0.0: fetches the v1.0.0 manifest JSON + media type, then puts it as v2.0.0. No image layers re-uploaded — just metadata.<br>
+        4. Verify all 8 tags — lists all image tags per repository. Expected: v1.0.0 and v2.0.0 for each of auth, charge, webhook, kyc.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label verify">Expected Output</div>
+    <div class="section-body">
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre class="verify-block" data-lang="bash">================================================================
+  NovaPay - Build v2.0.0 Images
+  Account: 390402549817
+  Region:  us-east-1
+================================================================
+
+>>> Checking v1.0.0 images exist...
+  ✅ novapay-poc/auth:v1.0.0 exists
+  ✅ novapay-poc/charge:v1.0.0 exists
+  ✅ novapay-poc/webhook:v1.0.0 exists
+  ✅ novapay-poc/kyc:v1.0.0 exists
+
+>>> Creating v2.0.0 tags from v1.0.0 (ECR manifest copy)...
+  ✅ novapay-poc/auth:v2.0.0 created
+  ✅ novapay-poc/charge:v2.0.0 created
+  ✅ novapay-poc/webhook:v2.0.0 created
+  ✅ novapay-poc/kyc:v2.0.0 created
+
+>>> Verification:
+  novapay-poc/auth:    v1.0.0  v2.0.0
+  novapay-poc/charge:  v1.0.0  v2.0.0
+  ...</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 5 — module3-4-demo.sh
+════════════════════════════════════════════════════ -->
+<section class="problem" id="sec5">
+  <div class="problem-header">
+    <div class="problem-num">05</div>
+    <div class="problem-titles">
+      <h2>module3-4-demo.sh</h2>
+      <div class="tagline">Script 2 — Interactive Blue/Green Demo, End-to-End</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>TIME</strong> ~6 min total</span>
+      <span class="row"><strong>MODE</strong> Interactive or --auto</span>
+      <span class="row"><strong>PARTS</strong> E · F · G</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label scenario">Purpose</div>
+    <div class="section-body">
+      <div class="scenario-box">
+        <div class="lede">Executes the full release lifecycle: trigger → pause → inspect → promote → rollback → compare. Pauses between each step so you can observe the cluster state and explain what's happening to the group.</div>
+        <p>Run <code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#f4a300;">bash module3-4-demo.sh</code> for interactive mode (press ENTER to advance). Run <code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#f4a300;">bash module3-4-demo.sh --auto</code> for CI testing (2s pause between steps).</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label arch">Script Coverage</div>
+    <div class="section-body">
+      <div class="concept-table-wrap">
+        <table>
+          <thead><tr><th>Part</th><th>Steps</th><th>Duration</th><th>What You See</th></tr></thead>
+          <tbody>
+            <tr><td>E</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">E.1 – E.7</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">~3 min</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Full v1→v2 Blue/Green release with atomic promotion</td></tr>
+            <tr><td>F</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">F.1 – F.5</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">~2 min</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Bad deploy aborted in &lt;5s, production unaffected throughout</td></tr>
+            <tr><td>G</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">G.1 – G.2</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">~1 min</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Rolling update version mixing visible on kyc-service</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 6 — PART E
+════════════════════════════════════════════════════ -->
+<section class="problem" id="sec6">
+  <div class="problem-header">
+    <div class="problem-num">06</div>
+    <div class="problem-titles">
+      <h2>Part E — Execute</h2>
+      <div class="tagline">Blue/Green Release: v1.0.0 → v2.0.0</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>STEPS</strong> E.1 – E.7</span>
+      <span class="row"><strong>TIME</strong> ~3 min</span>
+      <span class="row"><strong>PROVES</strong> FR-01 · Zero version mixing</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label step">E.1</div>
+    <div class="section-body">
+      <div class="step-box">
+        <div class="step-box-header"><span class="step-num">E.1</span><h4>Verify current state</h4><span class="step-time">INSTANT</span></div>
+        <div class="why-label">// WHY</div>
+        <div class="why-text">Confirms the Rollout is Healthy with v1.0.0 as the stable/active image. 3 pods running. This is your baseline. If the Rollout is Degraded from a previous abort, fix it before proceeding (see Part F.5).</div>
+      </div>
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="bash">kubectl argo rollouts get rollout payment-service -n novapay-prod</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label step">E.2</div>
+    <div class="section-body">
+      <div class="step-box">
+        <div class="step-box-header"><span class="step-num">E.2</span><h4>Trigger the rollout — set new image</h4><span class="step-time">TRIGGERS KARPENTER ~30s</span></div>
+        <div class="why-label">// WHY</div>
+        <div class="why-text">This creates a new ReplicaSet (Green) with v2.0.0. The old ReplicaSet (Blue/v1.0.0) continues serving 100% of traffic. Karpenter provisions new nodes if needed (~30 seconds). The active Service selector does NOT change yet.</div>
+      </div>
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="bash">kubectl argo rollouts set image payment-service \
+  payment-service=390402549817.dkr.ecr.us-east-1.amazonaws.com/novapay-poc/charge:v2.0.0 \
+  -n novapay-prod</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label step">E.3</div>
+    <div class="section-body">
+      <div class="step-box">
+        <div class="step-box-header"><span class="step-num">E.3</span><h4>Observe the PAUSED state</h4><span class="step-time">OBSERVE</span></div>
+        <div class="why-label">// WHY</div>
+        <div class="why-text">After Green pods pass readiness probes, the Rollout enters Paused — BlueGreenPause. This is the safety gate: both versions exist, but Blue still serves ALL production traffic. Green receives zero real requests. This is the moment the March incident would have been prevented.</div>
+      </div>
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="bash"><span class="tok-c"># Watch in real-time (separate terminal)</span>
+kubectl argo rollouts get rollout payment-service -n novapay-prod -w</pre>
+      </div>
+      <div class="note-box"><strong>// WHAT YOU SEE IN THE PAUSED STATE</strong>Status: ‖ Paused — BlueGreenPause · Blue (v1.0.0): 3 pods, stable, active — SERVING TRAFFIC · Green (v2.0.0): 3 pods, preview — ZERO REAL TRAFFIC</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label step">E.4</div>
+    <div class="section-body">
+      <div class="step-box">
+        <div class="step-box-header"><span class="step-num">E.4</span><h4>Verify zero version mixing — inspect endpoints</h4><span class="step-time">CRITICAL PROOF</span></div>
+        <div class="why-label">// WHY THIS IS THE KEY PROPERTY</div>
+        <div class="why-text">The active and preview Services point to completely different pod IP sets. No overlap. This is the fundamental guarantee that the March incident cannot happen — you can see it in the endpoints right now.</div>
+      </div>
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="bash"><span class="tok-c"># Blue pods (active — serving production traffic)</span>
+kubectl get endpoints payment-service-active -n novapay-prod
+<span class="tok-c"># Shows: 10.100.10.32:3002, 10.100.10.33:3002, 10.100.20.129:3002
+
+# Green pods (preview — zero real traffic)</span>
+kubectl get endpoints payment-service-preview -n novapay-prod
+<span class="tok-c"># Shows: 10.100.10.64:3002, 10.100.20.160:3002, 10.100.20.161:3002
+# ↑ COMPLETELY DIFFERENT IPs — no overlap!</span></pre>
+      </div>
+
+      <!-- VENN: Zero version mixing proof -->
+      <div class="diagram" data-fig="FIG 6.1 — Zero version mixing: active and preview Services route to completely separate pod IP sets">
+        <svg viewBox="0 0 820 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;height:auto;">
+          <rect width="820" height="200" fill="#f8f5f0"/>
+          <!-- Left set: Blue pods -->
+          <ellipse cx="270" cy="100" rx="210" ry="75" fill="rgba(45,106,79,0.15)" stroke="#2d6a4f" stroke-width="2" stroke-dasharray="0"/>
+          <!-- Right set: Green pods -->
+          <ellipse cx="550" cy="100" rx="210" ry="75" fill="rgba(59,125,202,0.12)" stroke="#3b7dca" stroke-width="2"/>
+          <!-- No overlap — pushed apart -->
+          <text x="130" y="50" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#2d6a4f">payment-service-active</text>
+          <text x="130" y="65" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#2d6a4f">BLUE pods (v1.0.0)</text>
+          <text x="165" y="90" font-family="'JetBrains Mono',monospace" font-size="10" fill="#3a3530">▸ pod-blue-1: 10.100.10.32</text>
+          <text x="165" y="107" font-family="'JetBrains Mono',monospace" font-size="10" fill="#3a3530">▸ pod-blue-2: 10.100.10.33</text>
+          <text x="165" y="124" font-family="'JetBrains Mono',monospace" font-size="10" fill="#3a3530">▸ pod-blue-3: 10.100.20.129</text>
+          <text x="680" y="50" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#3b7dca">payment-service-preview</text>
+          <text x="680" y="65" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#3b7dca">GREEN pods (v2.0.0)</text>
+          <text x="450" y="90" font-family="'JetBrains Mono',monospace" font-size="10" fill="#3a3530">▸ pod-green-1: 10.100.10.64</text>
+          <text x="450" y="107" font-family="'JetBrains Mono',monospace" font-size="10" fill="#3a3530">▸ pod-green-2: 10.100.20.160</text>
+          <text x="450" y="124" font-family="'JetBrains Mono',monospace" font-size="10" fill="#3a3530">▸ pod-green-3: 10.100.20.161</text>
+          <!-- Gap label -->
+          <text x="410" y="95" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="18" font-weight="700" fill="#ff5722">∅</text>
+          <text x="410" y="115" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#ff5722">NO OVERLAP</text>
+          <text x="410" y="175" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#6b655d">The union of both endpoint sets is empty — 100% traffic isolation between Blue and Green</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label step">E.5</div>
+    <div class="section-body">
+      <div class="step-box">
+        <div class="step-box-header"><span class="step-num">E.5</span><h4>Smoke test Green via preview Service</h4><span class="step-time">VALIDATION</span></div>
+        <div class="why-label">// WHY</div>
+        <div class="why-text">Before promoting, verify the new version is actually working. Call it directly through the preview Service. Production traffic is NOT affected — this is internal cluster traffic only.</div>
+      </div>
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="bash">kubectl exec -n novapay-prod deploy/auth-service -- \
+  wget -qO- http://payment-service-preview.novapay-prod.svc.cluster.local/health
+<span class="tok-c"># Expected: {"service":"charge","status":"ok","checks":{"db":"ok",...}}</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label step">E.6</div>
+    <div class="section-body">
+      <div class="step-box">
+        <div class="step-box-header"><span class="step-num">E.6</span><h4>PROMOTE — Atomic traffic switch</h4><span class="step-time">&lt;1 SECOND</span></div>
+        <div class="why-label">// WHY THIS IS ATOMIC</div>
+        <div class="why-text">This is the moment. Argo Rollouts flips the active Service selector from Blue to Green. All traffic moves instantly. No new pods created, no rolling restart, no gradual shift. One API call. The switch took less than one second.</div>
+      </div>
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="bash">kubectl argo rollouts promote payment-service -n novapay-prod</pre>
+      </div>
+      <div class="note-box"><strong>// RESULT</strong>All production traffic now on v2.0.0. The switch took &lt;1 second. Blue (v1.0.0) pods are retained for 60 seconds (scaleDownDelaySeconds), then terminated.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label verify">E.7</div>
+    <div class="section-body">
+      <div class="step-box">
+        <div class="step-box-header"><span class="step-num">E.7</span><h4>Verify promotion complete</h4><span class="step-time">VALIDATION</span></div>
+      </div>
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre class="verify-block" data-lang="bash"><span class="tok-c"># Status should show Healthy with v2.0.0 as stable/active</span>
+kubectl argo rollouts get rollout payment-service -n novapay-prod
+
+<span class="tok-c"># After 70s, only v2.0.0 pods remain</span>
+sleep 70
+kubectl get pods -n novapay-prod -l app=payment-service \
+  -o jsonpath='{range .items[*]}{.spec.containers[0].image}{"\n"}{end}'
+<span class="tok-c"># All show: .../novapay-poc/charge:v2.0.0</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 7 — PART F
+════════════════════════════════════════════════════ -->
+<section class="problem" id="sec7">
+  <div class="problem-header">
+    <div class="problem-num">07</div>
+    <div class="problem-titles">
+      <h2>Part F — Rollback</h2>
+      <div class="tagline">Instant Rollback — March Incident Prevention Proof</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>STEPS</strong> F.1 – F.5</span>
+      <span class="row"><strong>TIME</strong> ~2 min</span>
+      <span class="row"><strong>PROVES</strong> FR-06 · Rollback &lt;60s</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label scenario">The Scenario</div>
+    <div class="section-body">
+      <div class="war-story">
+        A bad release is deployed. In March, this caused 40 minutes of downtime. With Blue/Green, the broken code NEVER reaches production traffic. Rollback takes 2–3 seconds.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label step">F.1</div>
+    <div class="section-body">
+      <div class="step-box">
+        <div class="step-box-header"><span class="step-num">F.1</span><h4>Deploy a broken version</h4><span class="step-time">DELIBERATE FAILURE</span></div>
+        <div class="why-label">// WHY nginx as the broken image</div>
+        <div class="why-text">Using nginx as the image — it listens on port 80, but the readiness probe checks port 3002 /health. The probe will fail. Green pods will never become Ready. Production stays on v2.0.0 — zero customer impact.</div>
+      </div>
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="bash">kubectl argo rollouts set image payment-service \
+  payment-service=public.ecr.aws/nginx/nginx:alpine \
+  -n novapay-prod</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label step">F.2</div>
+    <div class="section-body">
+      <div class="step-box">
+        <div class="step-box-header"><span class="step-num">F.2</span><h4>Watch it fail SAFELY</h4><span class="step-time">OBSERVE</span></div>
+        <div class="why-label">// THE KEY INSIGHT</div>
+        <div class="why-text">Green pods enter CrashLoopBackOff (readiness probe failing). But the active Service selector NEVER changes. All production traffic continues on v2.0.0. Zero customer impact. This is exactly what didn't happen in March — the March deploy changed the selector.</div>
+      </div>
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="bash">kubectl argo rollouts get rollout payment-service -n novapay-prod
+<span class="tok-c"># You see:
+#   Green: 3 pods, 0 Ready, CrashLoopBackOff
+#   Active (v2.0.0): 3 pods, Running — STILL SERVING 100%
+
+# Prove production is healthy:</span>
+kubectl exec -n novapay-prod deploy/auth-service -- \
+  wget -qO- http://payment-service-active.novapay-prod.svc.cluster.local/health
+<span class="tok-c"># Returns: {"service":"charge","status":"ok",...} — working perfectly</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label step">F.3</div>
+    <div class="section-body">
+      <div class="step-box">
+        <div class="step-box-header"><span class="step-num">F.3</span><h4>ABORT — Instant rollback</h4><span class="step-time">2–3 SECONDS · FR-06 PROVEN</span></div>
+        <div class="why-label">// THIS IS THE MOMENT</div>
+        <div class="why-text">One command. Scales broken Green to 0. Production continues uninterrupted. This is the moment that would have prevented 40 minutes of downtime in March.</div>
+      </div>
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="bash">START=$(date +%s)
+kubectl argo rollouts abort payment-service -n novapay-prod
+END=$(date +%s)
+echo "Rollback time: $((END - START)) seconds"
+<span class="tok-c"># Output: Rollback time: 2 seconds</span></pre>
+      </div>
+      <div class="note-box"><strong>// FR-06 PROVEN</strong>Rollback in 2–3 seconds. Requirement was &lt;60s. The broken nginx image NEVER served a single production request.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label verify">F.4 – F.5</div>
+    <div class="section-body">
+      <div class="step-box">
+        <div class="step-box-header"><span class="step-num">F.4–F.5</span><h4>Verify &amp; Restore</h4><span class="step-time">VALIDATION</span></div>
+        <div class="why-label">// WHY RESTORE MATTERS</div>
+        <div class="why-text">After an abort, the Rollout is in Degraded state. It needs to be set to a healthy image and promoted to restore to Healthy. This step proves the recovery path is also fast and clean.</div>
+      </div>
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre class="verify-block" data-lang="bash"><span class="tok-c"># Confirms production is healthy (all v2.0.0 pods running)</span>
+kubectl get pods -n novapay-prod -l app=payment-service
+
+<span class="tok-c"># Restore healthy state — set back to known good image + promote</span>
+kubectl argo rollouts set image payment-service \
+  payment-service=390402549817.dkr.ecr.us-east-1.amazonaws.com/novapay-poc/charge:v2.0.0 \
+  -n novapay-prod
+sleep 10
+kubectl argo rollouts promote payment-service -n novapay-prod 2>/dev/null || true
+<span class="tok-c"># Rollout status should show Healthy</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 8 — PART G
+════════════════════════════════════════════════════ -->
+<section class="problem" id="sec8">
+  <div class="problem-header">
+    <div class="problem-num">08</div>
+    <div class="problem-titles">
+      <h2>Part G — Comparison</h2>
+      <div class="tagline">Rolling Update Version Mixing on kyc-service</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>STEPS</strong> G.1 – G.2</span>
+      <span class="row"><strong>TIME</strong> ~1 min</span>
+      <span class="row"><strong>PROVES</strong> WHY payment needs Blue/Green</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label scenario">The Point</div>
+    <div class="section-body">
+      <div class="scenario-box">
+        <div class="lede">kyc-service uses a standard Kubernetes Deployment (rolling update). Watch both v1.0.0 and v2.0.0 serve traffic simultaneously during the update. For kyc-service this is acceptable. For payment-service this would be the March incident.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label step">G.1 – G.2</div>
+    <div class="section-body">
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="bash">kubectl set image deployment/kyc-service -n novapay-prod \
+  kyc-service=390402549817.dkr.ecr.us-east-1.amazonaws.com/novapay-poc/kyc:v2.0.0
+
+<span class="tok-c"># IMMEDIATELY check:</span>
+kubectl get pods -n novapay-prod -l app=kyc-service \
+  -o jsonpath='{range .items[*]}{.spec.containers[0].image}{"\n"}{end}'
+<span class="tok-c"># Output (during transition):
+#   .../kyc:v1.0.0   ← old pod still serving
+#   .../kyc:v1.0.0   ← old pod still serving
+#   .../kyc:v2.0.0   ← new pod ALSO serving
+#   .../kyc:v2.0.0   ← new pod ALSO serving</span></pre>
+      </div>
+
+      <!-- VENN: Version mixing during rolling update -->
+      <div class="diagram" data-fig="FIG 8.1 — Rolling update: v1 and v2 pods in the SAME Service endpoint set simultaneously — version mixing">
+        <svg viewBox="0 0 820 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;height:auto;">
+          <rect width="820" height="200" fill="#f8f5f0"/>
+          <!-- Left circle v1 pods -->
+          <ellipse cx="310" cy="100" rx="220" ry="75" fill="rgba(192,57,43,0.10)" stroke="#c0392b" stroke-width="2"/>
+          <!-- Right circle v2 pods -->
+          <ellipse cx="510" cy="100" rx="220" ry="75" fill="rgba(15,58,95,0.10)" stroke="#0f3a5f" stroke-width="2"/>
+          <!-- Overlap zone — highlighted red -->
+          <ellipse cx="410" cy="100" rx="100" ry="60" fill="rgba(255,87,34,0.20)" stroke="#ff5722" stroke-width="2" stroke-dasharray="5,3"/>
+          <text x="130" y="65" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#c0392b">v1.0.0 pods</text>
+          <text x="160" y="95" font-family="'JetBrains Mono',monospace" font-size="10" fill="#3a3530">pod-1: 10.100.10.10</text>
+          <text x="160" y="112" font-family="'JetBrains Mono',monospace" font-size="10" fill="#3a3530">pod-2: 10.100.10.11</text>
+          <text x="660" y="65" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#0f3a5f">v2.0.0 pods</text>
+          <text x="530" y="95" font-family="'JetBrains Mono',monospace" font-size="10" fill="#3a3530">pod-3: 10.100.20.10</text>
+          <text x="530" y="112" font-family="'JetBrains Mono',monospace" font-size="10" fill="#3a3530">pod-4: 10.100.20.11</text>
+          <!-- Overlap label -->
+          <text x="410" y="88" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#ff5722">SAME SERVICE</text>
+          <text x="410" y="103" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#ff5722">Both in endpoints</text>
+          <text x="410" y="118" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#ff5722">simultaneously</text>
+          <text x="410" y="175" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="11" fill="#6b655d">✓ OK for kyc (stateless) · ✗ NOT OK for payment (token format coupling = March incident)</text>
+        </svg>
+      </div>
+
+      <div class="gotcha-box">
+        <h4>Version Mixing: kyc vs payment</h4>
+        <ul>
+          <li>Both v1.0.0 and v2.0.0 pods serve traffic <strong>simultaneously</strong> — Request 1 → v1.0.0, Request 2 → v2.0.0</li>
+          <li>For <code>kyc-service</code> (stateless, no cross-request coupling): this is <strong>acceptable</strong></li>
+          <li>For <code>payment-service</code>: POST /auth (v1) issues token → POST /charge (v2) can't parse it → charge fails → <strong>THE MARCH INCIDENT</strong></li>
+          <li>This is why payment-service needs Blue/Green and kyc-service can use rolling update</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 9 — PRODUCTION AT SCALE
+════════════════════════════════════════════════════ -->
+<section class="problem" id="sec9">
+  <div class="problem-header">
+    <div class="problem-num">09</div>
+    <div class="problem-titles">
+      <h2>Production at Scale</h2>
+      <div class="tagline">Capacity Planning, Multi-AZ, PDB, Promotion Strategies</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>TYPE</strong> Production Engineering</span>
+      <span class="row"><strong>APPLIES TO</strong> Any Blue/Green at scale</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label arch">Capacity Planning</div>
+    <div class="section-body">
+      <div class="note-box"><strong>// BLUE/GREEN REQUIRES 2× POD RESOURCES DURING TRANSITION</strong>During the pause phase, both Blue (3 pods) and Green (3 pods) run simultaneously. For NovaPay's payment-service with 3 replicas × 512Mi memory = 1.5Gi extra during deploy.</div>
+      <div class="concept-table-wrap">
+        <table>
+          <thead><tr><th>Scale</th><th>Replicas</th><th>Memory During Deploy</th><th>Mitigation</th></tr></thead>
+          <tbody>
+            <tr><td>Small (lab)</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">3</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">+1.5 Gi</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Karpenter auto-provisions</td></tr>
+            <tr><td>Medium (prod)</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">10</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">+5 Gi</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Karpenter + consolidation policy</td></tr>
+            <tr><td>Large (peak)</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">50</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">+25 Gi</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Pre-warm nodes, Spot for Green during preview</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label arch">Multi-AZ Topology</div>
+    <div class="section-body">
+      <div class="note-box"><strong>// TOPOLOGY SPREAD</strong>The Rollout includes topologySpreadConstraints to distribute pods across availability zones. During Blue/Green transition, both sets maintain zone distribution.</div>
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="yaml"><span class="tok-k">topologySpreadConstraints</span>:
+  - <span class="tok-k">maxSkew</span>: 1
+    <span class="tok-k">topologyKey</span>: topology.kubernetes.io/zone
+    <span class="tok-k">whenUnsatisfiable</span>: DoNotSchedule
+    <span class="tok-k">labelSelector</span>:
+      <span class="tok-k">matchLabels</span>:
+        <span class="tok-k">app</span>: payment-service</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label practices">PDB During Rollout</div>
+    <div class="section-body">
+      <div class="practices-box">
+        <h5>// PodDisruptionBudget During Blue/Green</h5>
+        <ul>
+          <li><code>minAvailable: 2</code> ensures that node maintenance, spot interruptions, or Karpenter consolidation cannot evict pods below the minimum. During Blue/Green, this applies to BOTH Blue and Green pods independently.</li>
+          <li><strong>Gotcha:</strong> If you have exactly 2 replicas with <code>minAvailable: 2</code>, node drain will be blocked entirely. Always use replicas ≥ minAvailable + 1.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label arch">Promotion Strategies</div>
+    <div class="section-body">
+      <div class="concept-table-wrap">
+        <table>
+          <thead><tr><th>Strategy</th><th>Config</th><th>Use Case</th></tr></thead>
+          <tbody>
+            <tr><td>Manual gate (current)</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;">autoPromotionEnabled: false</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">High-risk services, compliance requirements</td></tr>
+            <tr><td>Auto with delay</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;">autoPromotionEnabled: true<br>autoPromotionSeconds: 300</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Auto-promote after 5min if Green stays healthy</td></tr>
+            <tr><td>Analysis-driven</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;">AnalysisTemplate with Prometheus metrics</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Promote only if error rate &lt;0.1% after 10min</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note-box"><strong>// PRODUCTION-GRADE ANALYSISTEMPLATE</strong>This auto-aborts the rollout if the 5xx error rate exceeds 1% — fully automated March incident prevention.</div>
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="yaml"><span class="tok-k">apiVersion</span>: argoproj.io/v1alpha1
+<span class="tok-k">kind</span>: AnalysisTemplate
+<span class="tok-k">metadata</span>:
+  <span class="tok-k">name</span>: payment-service-canary-check
+<span class="tok-k">spec</span>:
+  <span class="tok-k">metrics</span>:
+    - <span class="tok-k">name</span>: error-rate
+      <span class="tok-k">interval</span>: 60s
+      <span class="tok-k">count</span>: 5
+      <span class="tok-k">successCondition</span>: result[0] &lt; 0.01
+      <span class="tok-k">provider</span>:
+        <span class="tok-k">prometheus</span>:
+          <span class="tok-k">address</span>: https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-xxx/
+          <span class="tok-k">query</span>: |
+            sum(rate(http_requests_total{service="payment-service",status=~"5.."}[2m]))
+            /
+            sum(rate(http_requests_total{service="payment-service"}[2m]))</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 10 — OPERATIONAL RUNBOOK
+════════════════════════════════════════════════════ -->
+<section class="problem" id="sec10">
+  <div class="problem-header">
+    <div class="problem-num">10</div>
+    <div class="problem-titles">
+      <h2>Operational Runbook</h2>
+      <div class="tagline">Deploy, Emergency Rollback, History — Day-2 Operations</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>TYPE</strong> Runbook</span>
+      <span class="row"><strong>AUDIENCE</strong> On-call engineers</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label step">Deploy</div>
+    <div class="section-body">
+      <div class="step-box">
+        <div class="step-box-header"><span class="step-num">RUNBOOK</span><h4>Deploy a New Version</h4></div>
+      </div>
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="bash"><span class="tok-c"># 1. Verify current state</span>
+kubectl argo rollouts get rollout payment-service -n novapay-prod
+
+<span class="tok-c"># 2. Set new image (triggers Blue/Green)</span>
+kubectl argo rollouts set image payment-service \
+  payment-service=390402549817.dkr.ecr.us-east-1.amazonaws.com/novapay-poc/charge:v2.1.0 \
+  -n novapay-prod
+
+<span class="tok-c"># 3. Wait for Green to be ready (~30–60s)</span>
+kubectl argo rollouts get rollout payment-service -n novapay-prod -w
+
+<span class="tok-c"># 4. Smoke test via preview</span>
+kubectl exec -n novapay-prod deploy/auth-service -- \
+  wget -qO- http://payment-service-preview.novapay-prod.svc.cluster.local/health
+
+<span class="tok-c"># 5. Promote (after approval)</span>
+kubectl argo rollouts promote payment-service -n novapay-prod</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label gotcha">Emergency</div>
+    <div class="section-body">
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre data-lang="bash"><span class="tok-c"># If rollout is paused (Green not yet promoted):</span>
+kubectl argo rollouts abort payment-service -n novapay-prod
+
+<span class="tok-c"># If already promoted and issues found:</span>
+kubectl argo rollouts undo payment-service -n novapay-prod</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label verify">History</div>
+    <div class="section-body">
+      <div class="copy-wrap">
+        <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+<pre class="verify-block" data-lang="bash">kubectl argo rollouts get rollout payment-service -n novapay-prod
+<span class="tok-c"># Shows all revisions, which is active, which is stable</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 11 — TROUBLESHOOTING
+════════════════════════════════════════════════════ -->
+<section class="problem" id="sec11">
+  <div class="problem-header">
+    <div class="problem-num">11</div>
+    <div class="problem-titles">
+      <h2>Troubleshooting Guide</h2>
+      <div class="tagline">8 Known Failure Patterns and Their Fixes</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>TYPE</strong> Troubleshooting</span>
+      <span class="row"><strong>AUDIENCE</strong> All bootcamp participants</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label gotcha">Failures</div>
+    <div class="section-body">
+      <div class="concept-table-wrap">
+        <table>
+          <thead><tr><th>Symptom</th><th>Root Cause</th><th>Fix</th></tr></thead>
+          <tbody>
+            <tr><td>Rollout stuck "Progressing"</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Green pods can't schedule (no capacity)</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;">kubectl get nodeclaims — wait for Karpenter (~30s) or check SG/subnet tags</td></tr>
+            <tr><td>Green pods CrashLoopBackOff</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Image broken or wrong config</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;">Abort: kubectl argo rollouts abort payment-service -n novapay-prod</td></tr>
+            <tr><td>"unknown command: argo"</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">kubectl plugin not installed</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;">curl -LO ...kubectl-argo-rollouts-darwin-arm64</td></tr>
+            <tr><td>Rollout "Degraded" status</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Previous abort left it degraded</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Set image to current good version + promote</td></tr>
+            <tr><td>v2.0.0 ImagePullBackOff</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Image doesn't exist in ECR</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;">bash build-v2-images.sh</td></tr>
+            <tr><td>PDB blocking node drain</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">minAvailable = replicas count</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Ensure replicas &gt; minAvailable (e.g., 3 replicas, minAvailable: 2)</td></tr>
+            <tr><td>Promotion happened automatically</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">autoPromotionEnabled is true</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;">Set autoPromotionEnabled: false in Rollout spec</td></tr>
+            <tr><td>Both active and preview show same IPs</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Rollout not managing selectors</td><td style="font-family:'Space Grotesk',sans-serif;font-size:13px;">Verify Rollout strategy.blueGreen.activeService/previewService names match</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label complete">What You Proved</div>
+    <div class="section-body">
+      <div class="complete-box">
+        <h4>Summary — What You Proved Running These Scripts</h4>
+        <ul>
+          <li>FR-01: All services deploy independently with zero downtime — pods remain Running throughout</li>
+          <li>FR-06: Rollback in 2–3 seconds (requirement: &lt;60s) — massively exceeded</li>
+          <li>FR-13: Phase 1 behaviour preserved — health endpoints, structured logs, graceful shutdown identical on EKS</li>
+          <li>NFR-08: Immutable tags only (v1.0.0, v2.0.0) — no :latest anywhere</li>
+          <li>Zero version mixing: During Blue/Green, traffic is 100% on one version at all times — inspected endpoints to prove it</li>
+          <li>Rolling update risk: Visibly demonstrated version mixing on kyc-service — proves why payment needs Blue/Green</li>
+          <li>Production-ready: Multi-AZ, PDB, topology constraints, readiness gates, manual promotion gate</li>
+        </ul>
+      </div>
+
+      <div class="review-box" style="margin-top:24px;">
+        <h4>How a Principal Architect Validates This Module</h4>
+        <div class="rubric">
+          <div class="pts">20 pts</div><div>Both v1.0.0 and v2.0.0 images exist in ECR for all 4 services. No :latest tags anywhere. build-v2-images.sh ran clean.</div>
+          <div class="pts">20 pts</div><div>Blue/Green rollout demonstrated end-to-end: trigger → paused → inspect active vs preview endpoints (different IPs) → promote → verify only v2.0.0 remains.</div>
+          <div class="pts">20 pts</div><div>Rollback demonstrated: broken nginx image deployed, Green never promoted, abort measured under 5 seconds, production traffic uninterrupted throughout.</div>
+          <div class="pts">20 pts</div><div>Rolling update version mixing visible on kyc-service — both v1 and v2 pods in same endpoint set during transition.</div>
+          <div class="pts">20 pts</div><div>Can articulate why rolling update version mixing is acceptable for kyc-service but would cause the March incident on payment-service.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="outro">
+  <h2>Traffic is 100% on <em>one version</em><br>at all times. <em>Always.</em></h2>
+  <p>You didn't install a deployment tool today. You proved that a bad payment-service release can never reach production traffic again. Green pods that fail readiness never get promoted. The abort command takes five seconds. The March incident took forty minutes.</p>
+  <p style="margin-top:36px;font-size:17px;">Modules 6–7–8 add the observability layer — ADOT Collector, Loki, Grafana — the monitoring stack that would have caught the March incident before it lasted 40 minutes.</p>
+  <div class="sig">// END OF MODULE 3+4 EXECUTION GUIDE · VERIFY FR-01, FR-06, FR-13, NFR-08 BEFORE PROCEEDING</div>
+  <div class="copyright">
+    <strong>AWS Arch Bootcamp</strong> — NovaPay EKS Deployment Workbook · Phase 2 Module 3+4 Blue/Green Execution<br>
+    © 2025 AWS Arch Bootcamp. All rights reserved. This material is produced exclusively for bootcamp participants.<br>
+    Unauthorised reproduction, distribution, or sharing outside the bootcamp programme is prohibited.<br>
+    Commands and architecture patterns reflect AWS best practices as of 2025 and are subject to change with AWS service updates.<br>
+    <strong>AWS, EKS, Argo Rollouts, Helm, Karpenter</strong> are trademarks of their respective owners.
+  </div>
+</footer>
+
+</div>
+
+<script>
+function copyCode(btn) {
+  var wrap = btn.closest('.copy-wrap');
+  var pre = wrap ? wrap.querySelector('pre') : null;
+  if (!pre) return;
+  var cleaned = pre.innerText.split('\n').map(function(l){ return l.replace(/^\s+/, ''); }).join('\n').trim();
+  navigator.clipboard.writeText(cleaned).then(function() {
+    btn.textContent = 'COPIED ✓';
+    btn.classList.add('copied');
+    setTimeout(function(){ btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2200);
+  }).catch(function() {
+    var ta = document.createElement('textarea');
+    ta.value = cleaned;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = 'COPIED ✓';
+    btn.classList.add('copied');
+    setTimeout(function(){ btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2200);
+  });
+}
+document.querySelectorAll('.toc-list a').forEach(function(a) {
+  a.addEventListener('click', function(e) {
+    var target = document.querySelector(a.getAttribute('href'));
+    if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
+});
+</script>
+</body>
+</html>
