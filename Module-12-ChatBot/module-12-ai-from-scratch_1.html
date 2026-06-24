@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NovaPay — Module 12: AI From Scratch // Self-hosted LLM on EKS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,800;0,9..144,900;1,9..144,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0a0e0d;--paper:#ebe6dc;--paper-warm:#e3dccf;--accent:#ff5722;--accent-2:#f4a300;--blueprint:#0f3a5f;--blueprint-line:rgba(15,58,95,0.18);--danger:#c0392b;--success:#2d6a4f;--muted:#6b655d;--problem-bg:#1a1f1e;--problem-ink:#f4ede0;--lab-bg:#0a1f33;--lab-ink:#d4e4f4;--code-bg:#0d1117;--code-ink:#c9d1d9;--code-comment:#7a8087;--code-keyword:#ff7b72;--code-string:#a5d6a4;--code-func:#79c0ff;--warn-bg:#fef4d8;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Fraunces',Georgia,serif;background:var(--paper);color:var(--ink);line-height:1.55;font-size:17px;background-image:radial-gradient(circle at 20% 10%,rgba(255,87,34,0.04) 0%,transparent 50%),radial-gradient(circle at 80% 80%,rgba(15,58,95,0.05) 0%,transparent 50%);background-attachment:fixed;}
+body::before{content:"";position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");pointer-events:none;z-index:1;mix-blend-mode:multiply;}
+.wrap{position:relative;z-index:2;}
+
+/* HERO */
+.hero{padding:50px 6vw 60px;border-bottom:2px solid var(--ink);position:relative;overflow:hidden;}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--blueprint-line) 1px,transparent 1px),linear-gradient(90deg,var(--blueprint-line) 1px,transparent 1px);background-size:40px 40px;opacity:0.5;pointer-events:none;}
+.hero-top{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--ink);padding-bottom:12px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.15em;position:relative;z-index:2;flex-wrap:wrap;gap:8px;}
+.hero-top .stamp{background:var(--accent);color:var(--paper);padding:4px 10px;transform:rotate(-1deg);display:inline-block;font-weight:700;}
+.hero-title{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(36px,6vw,82px);line-height:0.9;letter-spacing:-0.03em;margin:28px 0 20px;position:relative;z-index:2;}
+.hero-title .slash{color:var(--accent);}
+.hero-title .small{display:block;font-size:clamp(13px,1.8vw,20px);font-weight:400;font-style:italic;color:var(--muted);letter-spacing:0;line-height:1.4;margin-top:14px;}
+.hero-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0;border:1px solid var(--ink);margin-top:32px;position:relative;z-index:2;}
+.hero-meta-item{padding:14px 18px;border-right:1px solid var(--ink);}
+.hero-meta-item:last-child{border-right:none;}
+.hero-meta-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.hero-meta-val{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--ink);}
+
+/* TOC */
+.toc{padding:50px 6vw;background:var(--paper-warm);border-bottom:2px solid var(--ink);}
+.toc-title{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.25em;text-transform:uppercase;margin-bottom:26px;color:var(--accent);}
+.toc-list{list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+.toc-list li{background:var(--paper);border:1px solid var(--ink);padding:18px 20px;transition:transform 0.15s;}
+.toc-list li:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink);}
+.toc-list a{color:var(--ink);text-decoration:none;font-family:'Space Grotesk',sans-serif;}
+.toc-num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:12px;font-weight:700;letter-spacing:0.1em;}
+.toc-text{display:block;margin-top:4px;font-family:'Fraunces',serif;font-size:18px;font-weight:700;line-height:1.2;}
+.toc-tag{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;letter-spacing:0.1em;text-transform:uppercase;display:block;}
+
+/* PROBLEM SECTIONS */
+.problem{padding:60px 6vw 60px;border-bottom:1px solid var(--ink);position:relative;}
+.problem:nth-child(even){background:var(--paper-warm);}
+.problem-header{display:grid;grid-template-columns:auto 1fr auto;gap:24px;align-items:end;border-bottom:3px solid var(--ink);padding-bottom:24px;margin-bottom:40px;}
+.problem-num{font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:100px;line-height:0.8;color:var(--accent);letter-spacing:-0.04em;}
+.problem-titles h2{font-family:'Fraunces',serif;font-weight:800;font-size:clamp(22px,3.5vw,44px);line-height:0.95;letter-spacing:-0.02em;margin-bottom:8px;}
+.problem-titles .tagline{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);}
+.problem-meta{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;background:var(--ink);color:var(--paper);padding:10px 14px;align-self:start;line-height:1.6;}
+.problem-meta .row{display:block;}.problem-meta .row+.row{margin-top:4px;}
+.problem-meta strong{color:var(--accent-2);}
+
+/* PART HEADER */
+.part-header{background:var(--problem-bg);color:var(--problem-ink);padding:24px 32px;margin:48px 0 0;border-left:6px solid var(--accent);position:relative;}
+.part-header::before{content:attr(data-part);position:absolute;top:-11px;left:20px;background:var(--accent);color:#fff;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.25em;padding:3px 10px;font-weight:700;}
+.part-header h3{font-family:'Fraunces',serif;font-size:clamp(20px,2.5vw,32px);font-weight:800;line-height:1.1;margin-bottom:8px;}
+.part-header p{font-family:'Space Grotesk',sans-serif;font-size:14px;color:#a8a090;line-height:1.55;}
+
+/* SECTIONS */
+.section{margin:32px 0;display:grid;grid-template-columns:130px 1fr;gap:36px;align-items:start;}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;padding:8px 12px;border:1px solid var(--ink);background:var(--paper);text-align:center;font-weight:700;position:sticky;top:20px;}
+.section-label.scenario{background:var(--problem-bg);color:var(--problem-ink);border-color:var(--problem-bg);}
+.section-label.concept{background:var(--blueprint);color:var(--paper);border-color:var(--blueprint);}
+.section-label.arch{background:#060e18;color:#79c0ff;border-color:#1e2d3d;}
+.section-label.why{background:#2a1f1a;color:var(--accent-2);border-color:#3a2e00;}
+.section-label.gotcha{background:var(--danger);color:var(--paper);border-color:var(--danger);}
+.section-label.verify{background:var(--success);color:var(--paper);border-color:var(--success);}
+.section-label.complete{background:var(--success);color:var(--paper);border-color:var(--success);}
+.section-label.summary{background:#1a0060;color:#c8b8ff;border-color:#1a0060;}
+.section-label.step{background:var(--problem-bg);color:var(--accent-2);border-color:var(--problem-bg);}
+.section-label.ref{background:#1a0060;color:#c8b8ff;border-color:#1a0060;}
+.section-body p{margin-bottom:14px;font-family:'Space Grotesk',sans-serif;font-size:15px;line-height:1.65;color:#2a2520;}
+
+/* SCENARIO BOX */
+.scenario-box{background:var(--problem-bg);color:var(--problem-ink);padding:32px 36px;border-left:6px solid var(--accent);font-family:'Space Grotesk',sans-serif;position:relative;}
+.scenario-box::before{content:"THE SCENARIO";position:absolute;top:-10px;left:28px;background:var(--accent);color:var(--paper);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;padding:3px 10px;font-weight:700;}
+.scenario-box .lede{font-family:'Fraunces',serif;font-style:italic;font-size:20px;line-height:1.4;margin-bottom:18px;color:#fff;}
+.scenario-box p{font-size:15px;line-height:1.6;margin-bottom:12px;}
+
+/* CONCEPT TABLE */
+.concept-table-wrap{background:#fff;border:1px solid var(--ink);overflow:hidden;margin:18px 0;}
+.concept-table-wrap table{width:100%;border-collapse:collapse;font-family:'Space Grotesk',sans-serif;font-size:13.5px;}
+.concept-table-wrap th{background:var(--ink);color:var(--accent-2);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;padding:10px 14px;text-align:left;}
+.concept-table-wrap td{padding:10px 14px;border-bottom:1px solid #d8d2c5;vertical-align:top;line-height:1.5;}
+.concept-table-wrap tr:last-child td{border-bottom:none;}
+.concept-table-wrap td:first-child{font-weight:700;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);white-space:nowrap;}
+.concept-table-wrap tr:nth-child(even) td{background:#f9f6f0;}
+.concept-table-wrap code{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--code-bg);color:var(--code-string);padding:2px 7px;border-radius:2px;}
+
+/* DIAGRAM */
+.diagram{background:#fafafa;border:1px solid var(--ink);padding:22px;margin:16px 0;text-align:center;position:relative;overflow-x:auto;}
+.diagram::before{content:attr(data-fig);position:absolute;top:8px;left:14px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--muted);}
+.diagram svg{max-width:100%;height:auto;}
+
+/* STEP BOX */
+.step-box{background:#fff;border:1px solid var(--ink);padding:28px 32px;margin:18px 0;position:relative;font-family:'Space Grotesk',sans-serif;}
+.step-box-header{display:flex;align-items:baseline;gap:16px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #d8d2c5;}
+.step-num{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;color:var(--paper);background:var(--ink);padding:3px 10px;letter-spacing:0.1em;}
+.step-title{font-family:'Fraunces',serif;font-size:19px;font-weight:700;}
+.step-box p{font-size:14.5px;line-height:1.6;color:#2a2520;margin-bottom:10px;}
+.step-box p:last-child{margin-bottom:0;}
+
+/* NOTE BOX */
+.note-box{background:rgba(244,163,0,0.10);border-left:3px solid var(--accent-2);padding:10px 16px;margin:14px 0;font-family:'Space Grotesk',sans-serif;font-size:14px;font-style:italic;color:#3a3530;}
+.note-box strong{font-style:normal;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--accent-2);display:block;margin-bottom:4px;font-weight:700;}
+
+/* WAR STORY */
+.war-story{background:#2a1f1a;color:#f4ede0;padding:22px 28px;border-left:4px solid var(--accent-2);margin:18px 0;font-family:'Fraunces',serif;font-style:italic;position:relative;font-size:16px;line-height:1.6;}
+.war-story::before{content:attr(data-label);display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--accent-2);margin-bottom:8px;font-style:normal;font-weight:700;}
+
+/* GOTCHA */
+.gotcha-box{background:var(--danger);color:#fff;padding:26px 30px;margin:18px 0;border-left:6px solid #000;position:relative;}
+.gotcha-box::before{content:"✱ COMMON MISCONCEPTION — DON'T GET CAUGHT OUT";position:absolute;top:-11px;left:22px;background:#000;color:var(--accent-2);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;padding:3px 10px;font-weight:700;}
+.gotcha-box h4{font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:12px;}
+.gotcha-box ul{list-style:none;padding:0;font-family:'Space Grotesk',sans-serif;font-size:14.5px;}
+.gotcha-box ul li{padding-left:26px;position:relative;margin:10px 0;line-height:1.55;}
+.gotcha-box ul li::before{content:"✗";position:absolute;left:4px;color:var(--accent-2);font-weight:700;}
+.gotcha-box code{font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(0,0,0,0.3);padding:2px 6px;}
+
+/* PRACTICES */
+.practices-box{background:rgba(255,87,34,0.04);border-top:2px solid var(--accent);border-bottom:2px solid var(--accent);padding:22px 26px;margin:18px 0;}
+.practices-box h5{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.25em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:12px;}
+.practices-box ul{list-style:none;padding:0;}
+.practices-box ul li{font-family:'Space Grotesk',sans-serif;font-size:14.5px;padding-left:26px;position:relative;margin:9px 0;line-height:1.55;color:#3a3530;}
+.practices-box ul li::before{content:"▸";position:absolute;left:4px;color:var(--accent);font-weight:700;}
+.practices-box code{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--ink);color:var(--accent-2);padding:2px 7px;border-radius:2px;}
+
+/* COMPLETE */
+.complete-box{background:#0d2b0d;color:#a8d5a8;padding:32px 36px;border-left:6px solid #3fb950;position:relative;margin:18px 0;}
+.complete-box::before{content:"✓ MODULE COMPLETE";position:absolute;top:-11px;left:22px;background:#3fb950;color:#0d1117;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;padding:3px 10px;font-weight:700;}
+.complete-box h4{font-family:'Fraunces',serif;font-size:21px;font-weight:700;color:#3fb950;margin-bottom:14px;}
+.complete-box ul{list-style:none;padding:0;font-family:'Space Grotesk',sans-serif;font-size:14.5px;}
+.complete-box ul li{padding-left:22px;position:relative;margin:8px 0;line-height:1.5;}
+.complete-box ul li::before{content:"✓";position:absolute;left:2px;color:#3fb950;font-weight:700;}
+
+/* SUMMARY BOX */
+.summary-box{background:#0d2b0d;color:#a8d5a8;padding:32px 36px;border-left:6px solid #3fb950;position:relative;margin:18px 0;}
+.summary-box::before{content:"✓ CHAPTER SUMMARY";position:absolute;top:-11px;left:22px;background:#3fb950;color:#0d1117;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;padding:3px 10px;font-weight:700;}
+.summary-box h4{font-family:'Fraunces',serif;font-size:21px;font-weight:700;color:#3fb950;margin-bottom:14px;}
+.summary-box ul{list-style:none;padding:0;font-family:'Space Grotesk',sans-serif;font-size:14.5px;}
+.summary-box ul li{padding-left:22px;position:relative;margin:8px 0;line-height:1.5;}
+.summary-box ul li::before{content:"✓";position:absolute;left:2px;color:#3fb950;font-weight:700;}
+
+/* CODE */
+pre{background:var(--code-bg);color:var(--code-ink);padding:20px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.75;overflow-x:auto;margin:16px 0;position:relative;}
+pre .cm{color:var(--code-comment);}
+pre .ck{color:var(--code-keyword);}
+pre .cs{color:var(--code-string);}
+pre .cf{color:var(--code-func);}
+pre .ca{color:var(--accent-2);}
+code{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent);background:rgba(255,87,34,0.08);padding:2px 6px;border-radius:2px;}
+.copy-btn{position:absolute;top:8px;right:10px;background:#1f2937;border:1px solid #374151;color:#9ca3af;font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 12px;cursor:pointer;letter-spacing:0.05em;}
+.copy-btn:hover{color:var(--accent-2);}
+.copy-btn.copied{color:var(--code-string);}
+
+/* OVERVIEW CARDS */
+.overview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:18px 0;}
+.overview-card{background:#fff;border:1px solid var(--ink);padding:20px 22px;}
+.overview-card-icon{font-size:26px;margin-bottom:10px;}
+.overview-card-title{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:8px;}
+.overview-card p{font-family:'Space Grotesk',sans-serif;font-size:13.5px;color:#3a3530;line-height:1.5;margin:0;}
+
+/* COMPARE TWO COL */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--ink);margin:16px 0;overflow:hidden;}
+.compare-col{padding:22px 24px;}
+.compare-col:first-child{border-right:1px solid var(--ink);background:#fff;}
+.compare-col:last-child{background:#f0f7f0;}
+.compare-col h4{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;font-weight:700;padding-bottom:10px;border-bottom:2px solid var(--ink);margin-bottom:14px;}
+.compare-col.bad h4{color:var(--danger);}
+.compare-col.good h4{color:var(--success);}
+.compare-col ul{list-style:none;padding:0;font-family:'Space Grotesk',sans-serif;font-size:14px;line-height:1.55;}
+.compare-col ul li{padding-left:20px;position:relative;margin:8px 0;color:#2a2520;}
+.compare-col.bad ul li::before{content:"✗";position:absolute;left:0;color:var(--danger);font-weight:700;}
+.compare-col.good ul li::before{content:"✓";position:absolute;left:0;color:var(--success);font-weight:700;}
+
+/* GLOSSARY */
+.glossary-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--ink);margin:16px 0;overflow:hidden;}
+.glossary-item{padding:12px 16px;border-bottom:1px solid #d8d2c5;font-family:'Space Grotesk',sans-serif;font-size:13.5px;line-height:1.5;}
+.glossary-item:nth-child(odd){border-right:1px solid #d8d2c5;background:#fff;}
+.glossary-item:nth-child(even){background:#f9f6f0;}
+.glossary-item b{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--blueprint);display:block;margin-bottom:3px;}
+
+/* OUTRO */
+.outro{padding:80px 6vw;background:var(--ink);color:var(--paper);text-align:center;border-top:4px solid var(--accent);}
+.outro h2{font-family:'Fraunces',serif;font-weight:900;font-style:italic;font-size:clamp(32px,5vw,72px);line-height:0.95;letter-spacing:-0.03em;margin-bottom:24px;}
+.outro h2 em{color:var(--accent);font-style:normal;}
+.outro p{font-family:'Fraunces',serif;font-size:19px;font-style:italic;max-width:680px;margin:0 auto 18px;color:var(--paper-warm);}
+.outro .sig{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.3em;color:var(--accent-2);margin-top:50px;}
+.copyright{margin-top:40px;padding-top:28px;border-top:1px solid rgba(235,230,220,0.15);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#6b655d;line-height:1.8;}
+.copyright strong{color:var(--accent-2);}
+
+@media(max-width:900px){
+  .problem-header{grid-template-columns:1fr;gap:10px;}
+  .problem-num{font-size:70px;}
+  .section{grid-template-columns:1fr;gap:10px;}
+  .section-label{position:static;display:inline-block;padding:6px 12px;}
+  .compare-grid{grid-template-columns:1fr;}
+  .compare-col:first-child{border-right:none;border-bottom:1px solid var(--ink);}
+  .glossary-grid{grid-template-columns:1fr;}
+  .glossary-item:nth-child(odd){border-right:none;}
+}
+@media print{
+  body{font-size:11pt;background:#fff;}
+  body::before{display:none;}
+  .hero-grid{display:none;}
+  pre{page-break-inside:avoid;font-size:10pt;}
+  .section{grid-template-columns:110px 1fr;gap:20px;}
+  .section-label{position:static;}
+  .outro{padding:40px 5vw;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ═══════════════════════════════════════ HERO -->
+<header class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-top">
+    <span>AWS Architecture Bootcamp // NovaPay</span>
+    <span class="stamp">Module 12 · AI From Scratch</span>
+    <span>6 Concepts · Lab Guide · ~2 Hours</span>
+  </div>
+  <h1 class="hero-title">
+    AI From<span class="slash"> Scratch</span>
+    <span class="small">Everything you need to understand what's actually running in this lab — what a language model is, why it needs special hardware, how vLLM serves it, and why a bank self-hosts instead of calling OpenAI. Grounded entirely in the Mistral-7B instance running in your cluster right now.</span>
+  </h1>
+  <div class="hero-meta">
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Model</div>
+      <div class="hero-meta-val">Mistral-7B-Instruct</div>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Serving engine</div>
+      <div class="hero-meta-val">vLLM on inf2.xlarge</div>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Core Concepts</div>
+      <div class="hero-meta-val">12 (incl. glossary)</div>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Prereq</div>
+      <div class="hero-meta-val">Modules 1–11</div>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Cost warning</div>
+      <div class="hero-meta-val">~$0.76/hr · tear down</div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════ TOC -->
+<nav class="toc">
+  <div class="toc-title">// What's inside</div>
+  <ul class="toc-list">
+    <li><a href="#overview">
+      <span class="toc-num">00</span>
+      <span class="toc-text">Overview &amp; how to run</span>
+      <span class="toc-tag">Start here</span>
+    </a></li>
+    <li><a href="#llm-basics">
+      <span class="toc-num">01</span>
+      <span class="toc-text">What a language model actually is</span>
+      <span class="toc-tag">Core concept</span>
+    </a></li>
+    <li><a href="#tokens-params">
+      <span class="toc-num">02</span>
+      <span class="toc-text">Tokens, parameters &amp; weights</span>
+      <span class="toc-tag">Core concept</span>
+    </a></li>
+    <li><a href="#training-inference">
+      <span class="toc-num">03</span>
+      <span class="toc-text">Training vs inference</span>
+      <span class="toc-tag">Core concept</span>
+    </a></li>
+    <li><a href="#hallucination">
+      <span class="toc-num">04</span>
+      <span class="toc-text">Knowledge limits &amp; hallucination</span>
+      <span class="toc-tag">Critical to understand</span>
+    </a></li>
+    <li><a href="#prompts-dials">
+      <span class="toc-num">05</span>
+      <span class="toc-text">Context window, prompts &amp; dials</span>
+      <span class="toc-tag">Core concept</span>
+    </a></li>
+    <li><a href="#hardware-stack">
+      <span class="toc-num">06</span>
+      <span class="toc-text">Hardware, vLLM &amp; the OpenAI API</span>
+      <span class="toc-tag">Architecture</span>
+    </a></li>
+    <li><a href="#data-residency">
+      <span class="toc-num">07</span>
+      <span class="toc-text">Why a bank self-hosts</span>
+      <span class="toc-tag">Business + compliance</span>
+    </a></li>
+    <li><a href="#glossary">
+      <span class="toc-num">08</span>
+      <span class="toc-text">Glossary — every term used</span>
+      <span class="toc-tag">Reference</span>
+    </a></li>
+  </ul>
+</nav>
+
+<!-- ═══════════════════════════════════════ SECTION 00: OVERVIEW -->
+<section class="problem" id="overview">
+  <div class="problem-header">
+    <div class="problem-num">00</div>
+    <div class="problem-titles">
+      <h2>Overview &amp; how to run this lab.</h2>
+      <div class="tagline">// what you're building · what you'll understand · in what order</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>Phase</strong> Build once</span>
+      <span class="row"><strong>Learn</strong> Repeat freely</span>
+      <span class="row"><strong>Cost</strong> $0.76/hr — tear down!</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label scenario">Scenario</div>
+    <div class="section-body">
+      <div class="scenario-box">
+        <p class="lede">NovaPay's customer support team gets 4,000 tickets a day. You're building a chatbot that answers them — running entirely inside NovaPay's own AWS account, so no customer data ever reaches a third-party server.</p>
+        <p>This module doesn't assume any AI background. Every concept is explained through what's physically running in your cluster — Mistral-7B served by vLLM on an inf2.xlarge Neuron node. By the end you'll know exactly what that sentence means and why every word in it was chosen deliberately.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label concept">What you'll understand</div>
+    <div class="section-body">
+      <div class="overview-grid">
+        <div class="overview-card">
+          <div class="overview-card-icon">🧠</div>
+          <div class="overview-card-title">What an LLM is</div>
+          <p>Not a database. Not a search engine. A next-token predictor — and why that simple idea produces surprisingly intelligent-looking output.</p>
+        </div>
+        <div class="overview-card">
+          <div class="overview-card-icon">⚙️</div>
+          <div class="overview-card-title">Tokens &amp; parameters</div>
+          <p>The two units everything else is measured in. Costs, limits, and model size all refer to these two concepts.</p>
+        </div>
+        <div class="overview-card">
+          <div class="overview-card-icon">🏋️</div>
+          <div class="overview-card-title">Training vs inference</div>
+          <p>Training is what Mistral's team did over weeks on thousands of GPUs. Inference is what your cluster does in milliseconds, right now. You are doing inference.</p>
+        </div>
+        <div class="overview-card">
+          <div class="overview-card-icon">⚠️</div>
+          <div class="overview-card-title">Hallucination</div>
+          <p>Why models confidently produce wrong answers about your company — and the two engineering approaches that fix it (RAG and fine-tuning).</p>
+        </div>
+        <div class="overview-card">
+          <div class="overview-card-icon">🔧</div>
+          <div class="overview-card-title">Prompts &amp; dials</div>
+          <p>The system message, temperature, max_tokens, and context window — the four levers you control every time you call the model.</p>
+        </div>
+        <div class="overview-card">
+          <div class="overview-card-icon">🏗️</div>
+          <div class="overview-card-title">The full stack</div>
+          <p>Inferentia2 chip → Neuron cores → vLLM → OpenAI API → Open WebUI. Why each layer exists and what happens if you remove any one of them.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label step">How to run</div>
+    <div class="section-body">
+      <div class="step-box">
+        <div class="step-box-header">
+          <span class="step-num">PHASE 1</span>
+          <span class="step-title">Build the infrastructure — once, ~31 min total</span>
+        </div>
+        <pre><button class="copy-btn" onclick="navigator.clipboard.writeText(this.nextSibling.textContent);this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)">Copy</button><span class="cm"># Step 1 — download AWS provider (~1 min)</span>
+terraform init
+
+<span class="cm"># Step 2 — VPC + EKS + system nodes + inf2 Neuron node (~16 min)</span>
+terraform apply
+
+<span class="cm"># Step 3 — Neuron device plugin + vLLM + chat UI (~15 min)</span>
+bash post-cluster.sh</pre>
+        <p>After <code>post-cluster.sh</code>, the model needs another 10–15 min on its very first run to pull a ~10 GB container image and download the Mistral-7B weights. Watch it with: <code>kubectl get pod -n vllm -w</code> — wait for <code>1/1 Running</code>.</p>
+        <div class="note-box"><strong>Cost</strong> The inf2.xlarge Neuron node bills at ~$0.76/hour on-demand with no idle timeout. This is the most expensive lab. Always run <code>bash teardown.sh</code> when you're finished.</div>
+      </div>
+
+      <div class="step-box">
+        <div class="step-box-header">
+          <span class="step-num">PHASE 2</span>
+          <span class="step-title">Learn — run these in order, repeat as often as you like</span>
+        </div>
+        <pre><button class="copy-btn" onclick="navigator.clipboard.writeText(this.nextSibling.textContent);this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)">Copy</button><span class="cm"># START HERE — guided: shows each command, runs it, explains the output</span>
+bash module-12-guided.sh
+
+<span class="cm"># THEN — graded drill: every check is PASS or FAIL</span>
+bash module-12-demo.sh          <span class="cm"># add --auto for no pauses (CI mode)</span>
+
+<span class="cm"># Open the chat UI in your browser</span>
+kubectl port-forward svc/chat-ui -n chatbot 8080:80
+<span class="cm"># → browse to http://localhost:8080</span></pre>
+        <p><strong>Learning order:</strong> guided script → open the UI and play → read this document → run the demo for a clean pass/fail.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ SECTION 01: WHAT IS AN LLM -->
+<section class="problem" id="llm-basics">
+  <div class="problem-header">
+    <div class="problem-num">01</div>
+    <div class="problem-titles">
+      <h2>What a language model actually is.</h2>
+      <div class="tagline">// strip away the hype — it's a next-token predictor</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>Type</strong> Core concept</span>
+      <span class="row"><strong>Lab ref</strong> module-12-guided.sh</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label concept">Core idea</div>
+    <div class="section-body">
+      <p>Strip away the hype. A large language model (LLM) is a <strong>next-token predictor</strong>. You give it some text, and it predicts the most likely next chunk of text, then the next, then the next — one piece at a time, until it decides to stop. That's it.</p>
+      <p>"Mistral-7B" running in this lab is doing exactly that when it answers "What is a payment chargeback?" — it's generating one likely piece after another.</p>
+      <p>Everything else — answering questions, writing code, summarising documents — is that one trick applied to text that happens to look like a conversation.</p>
+
+      <div class="war-story" data-label="🔍 THINK OF IT THIS WAY — REAL ANALOGY">
+        Your phone's autocomplete is a tiny, basic language model. Type "I'll be there in" and it suggests "five minutes." Mistral-7B is the exact same idea — just with 7 billion learned numbers instead of a few thousand, trained on vastly more text. The mechanism is identical; the scale is not. When the model answers your support question, it's doing autocomplete — extremely good autocomplete, but autocomplete nonetheless.
+      </div>
+
+      <div class="diagram" data-fig="FIG 1 — HOW INFERENCE WORKS">
+        <svg viewBox="0 0 780 200" font-family="'Space Grotesk',sans-serif">
+          <defs>
+            <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0,8 3,0 6" fill="#0f3a5f"/>
+            </marker>
+            <marker id="arr2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0,8 3,0 6" fill="#ff5722"/>
+            </marker>
+          </defs>
+          <!-- User prompt -->
+          <rect x="10" y="70" width="120" height="60" rx="4" fill="#e3dccf" stroke="#0a0e0d" stroke-width="1.5"/>
+          <text x="70" y="97" text-anchor="middle" font-size="12" font-weight="700" fill="#0a0e0d">User prompt</text>
+          <text x="70" y="115" text-anchor="middle" font-size="11" fill="#6b655d">"What is a</text>
+          <text x="70" y="128" text-anchor="middle" font-size="11" fill="#6b655d">chargeback?"</text>
+          <!-- Arrow -->
+          <line x1="132" y1="100" x2="158" y2="100" stroke="#0f3a5f" stroke-width="2" marker-end="url(#arr)"/>
+          <text x="145" y="92" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#6b655d">HTTP POST</text>
+          <!-- Tokeniser -->
+          <rect x="160" y="55" width="130" height="90" rx="4" fill="#0f3a5f" stroke="#0f3a5f"/>
+          <text x="225" y="82" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#f4a300">TOKENISER</text>
+          <text x="225" y="100" text-anchor="middle" font-size="11" fill="#ebe6dc">Splits text into</text>
+          <text x="225" y="115" text-anchor="middle" font-size="11" fill="#ebe6dc">numeric token IDs</text>
+          <text x="225" y="132" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#f4a300">[14, 318, 264…]</text>
+          <!-- Arrow -->
+          <line x1="292" y1="100" x2="318" y2="100" stroke="#0f3a5f" stroke-width="2" marker-end="url(#arr)"/>
+          <!-- Transformer -->
+          <rect x="320" y="30" width="160" height="140" rx="4" fill="#ff5722" stroke="#ff5722"/>
+          <text x="400" y="68" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#ebe6dc">TRANSFORMER</text>
+          <text x="400" y="85" text-anchor="middle" font-size="11" fill="#ebe6dc">7 billion weights</text>
+          <text x="400" y="102" text-anchor="middle" font-size="11" fill="#ebe6dc">multiply &amp; add</text>
+          <text x="400" y="119" text-anchor="middle" font-size="11" fill="#ebe6dc">to predict the</text>
+          <text x="400" y="136" text-anchor="middle" font-size="11" fill="#ebe6dc">next token</text>
+          <text x="400" y="157" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#f4a300">runs on inf2.xlarge</text>
+          <!-- Arrow -->
+          <line x1="482" y1="100" x2="508" y2="100" stroke="#ff5722" stroke-width="2" marker-end="url(#arr2)"/>
+          <!-- De-tokeniser -->
+          <rect x="510" y="55" width="130" height="90" rx="4" fill="#0f3a5f" stroke="#0f3a5f"/>
+          <text x="575" y="82" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#f4a300">DE-TOKENISER</text>
+          <text x="575" y="100" text-anchor="middle" font-size="11" fill="#ebe6dc">Converts token ID</text>
+          <text x="575" y="115" text-anchor="middle" font-size="11" fill="#ebe6dc">back to text</text>
+          <text x="575" y="132" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#f4a300">→ loop until done</text>
+          <!-- Arrow -->
+          <line x1="642" y1="100" x2="668" y2="100" stroke="#ff5722" stroke-width="2" marker-end="url(#arr2)"/>
+          <!-- Answer -->
+          <rect x="670" y="70" width="100" height="60" rx="4" fill="#0d2b0d" stroke="#3fb950" stroke-width="2"/>
+          <text x="720" y="97" text-anchor="middle" font-size="12" font-weight="700" fill="#3fb950">Answer</text>
+          <text x="720" y="115" text-anchor="middle" font-size="10" fill="#a8d5a8">"A chargeback</text>
+          <text x="720" y="127" text-anchor="middle" font-size="10" fill="#a8d5a8">is when…"</text>
+          <!-- Loop arrow -->
+          <path d="M720 70 Q720 20 400 20 Q320 20 320 30" fill="none" stroke="#ff5722" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr2)"/>
+          <text x="510" y="14" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#ff5722">repeats — one token per loop — until max_tokens or stop signal</text>
+        </svg>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-top:4px;font-family:'JetBrains Mono',monospace;text-align:center;">FIG 1 — The entire conversation lives inside the context window on every loop iteration.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ SECTION 02: TOKENS + PARAMS -->
+<section class="problem" id="tokens-params">
+  <div class="problem-header">
+    <div class="problem-num">02</div>
+    <div class="problem-titles">
+      <h2>Tokens, parameters, and weights.</h2>
+      <div class="tagline">// the two units everything is measured in</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>Type</strong> Core concept</span>
+      <span class="row"><strong>Why it matters</strong> Cost + size</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label concept">Tokens</div>
+    <div class="section-body">
+      <p>The model doesn't see words or letters. It sees <strong>tokens</strong> — pieces of words. "chargeback" might be two tokens: <code>charge</code> + <code>back</code>. A rough rule: <strong>1 token ≈ ¾ of a word, or ~4 characters</strong>.</p>
+      <p>You saw real token counts in this lab's responses:</p>
+      <pre><span class="cs">"usage"</span>: {
+  <span class="cs">"prompt_tokens"</span>: <span class="ca">14</span>,      <span class="cm">// your question was 14 tokens</span>
+  <span class="cs">"completion_tokens"</span>: <span class="ca">34</span>,  <span class="cm">// the model generated 34 tokens of answer</span>
+  <span class="cs">"total_tokens"</span>: <span class="ca">48</span>
+}</pre>
+      <div class="note-box"><strong>Why tokens matter</strong> You pay in compute time per token. Limits — the context window, max_tokens — are all measured in tokens. When you set <code>max_tokens: 80</code>, you're capping the answer at 80 tokens, not 80 words.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label concept">Parameters</div>
+    <div class="section-body">
+      <p>"Mistral-<strong>7B</strong>" means the model has <strong>7 billion parameters</strong>. A parameter (also called a <strong>weight</strong>) is a single number the model learned during training. Those 7 billion numbers, multiplied and added together in a specific structure, are what turn your input tokens into a prediction for the next token.</p>
+      <div class="compare-grid">
+        <div class="compare-col bad">
+          <h4>More parameters</h4>
+          <ul>
+            <li>Generally smarter and more capable</li>
+            <li>Bigger, slower, needs more memory</li>
+            <li>Costs more to run — bigger accelerator needed</li>
+            <li>Frontier models are 100B–1T+ parameters</li>
+          </ul>
+        </div>
+        <div class="compare-col good">
+          <h4>7B — why this lab uses it</h4>
+          <ul>
+            <li>"Small" by today's standards</li>
+            <li>Fits on a single inf2.xlarge (1 Inferentia2 chip)</li>
+            <li>Fast enough for demo/learning purposes</li>
+            <li>Still capable enough for real support answers</li>
+          </ul>
+        </div>
+      </div>
+      <div class="war-story" data-label="💡 THE MODEL IS LITERALLY THOSE NUMBERS">
+        The "weights" are the files the init container downloads in this lab — <code>hf download aws-neuron/Mistral-7B-Instruct-…</code>. That download, gigabytes of data, is the 7 billion numbers. The model <strong>is</strong> those numbers. There is no other secret. When you load the model, you're loading those numbers into the Neuron chip's memory so they can be used for matrix multiplication on each token.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ SECTION 03: TRAINING VS INFERENCE -->
+<section class="problem" id="training-inference">
+  <div class="problem-header">
+    <div class="problem-num">03</div>
+    <div class="problem-titles">
+      <h2>Training vs inference.</h2>
+      <div class="tagline">// two completely different activities — this lab is 100% inference</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>Type</strong> Core concept</span>
+      <span class="row"><strong>Career impact</strong> High</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label concept">The distinction</div>
+    <div class="section-body">
+      <p>There are two completely different activities involving an LLM. Most people conflate them. Don't.</p>
+      <div class="compare-grid">
+        <div class="compare-col bad">
+          <h4>Training — NOT what you're doing</h4>
+          <ul>
+            <li>The slow, massively expensive process of <em>learning</em> those 7 billion numbers</li>
+            <li>Done once, by Mistral's creators, on huge GPU clusters over weeks</li>
+            <li>Requires millions of dollars of compute</li>
+            <li>Produces the model weights (the files you download)</li>
+            <li>You are NOT doing this in the lab — ever</li>
+          </ul>
+        </div>
+        <div class="compare-col good">
+          <h4>Inference — what this lab does ✓</h4>
+          <ul>
+            <li><em>Using</em> the already-trained weights to answer a question</li>
+            <li>Fast — milliseconds to seconds per request</li>
+            <li>Relatively cheap — a fraction of a cent per query</li>
+            <li>Happens every single time someone sends a chat message</li>
+            <li>This lab is 100% inference, start to finish</li>
+          </ul>
+        </div>
+      </div>
+      <div class="war-story" data-label="🎯 WHY THIS MATTERS FOR YOUR CAREER">
+        Most production "AI engineering" is inference — serving, scaling, securing, and optimising a model that someone else trained. That's the cloud-architect-adjacent skill. You don't need to understand backpropagation or gradient descent to build production AI systems. What you need to understand is how to run the model reliably, cheaply, and securely inside your own infrastructure — which is exactly what this module teaches.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ SECTION 04: HALLUCINATION -->
+<section class="problem" id="hallucination">
+  <div class="problem-header">
+    <div class="problem-num">04</div>
+    <div class="problem-titles">
+      <h2>Knowledge limits &amp; hallucination.</h2>
+      <div class="tagline">// what the model knows, what it doesn't, and why it lies confidently</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>Type</strong> Critical</span>
+      <span class="row"><strong>Fix</strong> RAG (next module)</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label concept">Knowledge cutoff</div>
+    <div class="section-body">
+      <p>The model only knows what was in its training data, <strong>frozen at the moment training finished</strong>. It has no access to the internet, no access to your systems, and no awareness of anything that happened after its training cutoff.</p>
+      <div class="compare-grid">
+        <div class="compare-col good">
+          <h4>What it answers well</h4>
+          <ul>
+            <li>General knowledge questions — "what is a chargeback?" "what is KYC?" — because the public internet (its training data) is full of that</li>
+            <li>Coding questions, writing, summarisation of text you paste in</li>
+            <li>Anything well-represented in public text before the training cutoff</li>
+          </ul>
+        </div>
+        <div class="compare-col bad">
+          <h4>What it cannot know</h4>
+          <ul>
+            <li>Anything about your company — NovaPay's policies, prices, account rules</li>
+            <li>Live data — current balances, transaction history, today's exchange rate</li>
+            <li>Events after its training cutoff</li>
+            <li>Private/internal documents it has never seen</li>
+          </ul>
+        </div>
+      </div>
+      <div class="war-story" data-label="📋 WHAT THE LAB ACTUALLY SAW">
+        When this lab asked "What is NovaPay's exact refund policy?", the real Mistral-7B replied: <em>"I don't have real-time data or specific account information… general information about how refund policies might work for a company like NovaPay based on typical industry practices."</em> — That's the honest answer. The problem is it won't always be that honest.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label gotcha">Hallucination</div>
+    <div class="section-body">
+      <div class="gotcha-box">
+        <h4>The model produces a confident, fluent, wrong answer</h4>
+        <ul>
+          <li>When pushed for specifics it doesn't have, the model often <strong>hallucinates</strong> — makes something up that sounds completely plausible</li>
+          <li>Remember: it's a next-token predictor. "Plausible-sounding text" is <em>exactly</em> what it optimises for, whether or not it's true</li>
+          <li>A bigger model doesn't fix this — a larger model will hallucinate more <em>convincingly</em></li>
+          <li><strong>The fix is giving the model your data at question time</strong> — not hoping it somehow already knows</li>
+        </ul>
+      </div>
+
+      <p>There are two engineering approaches to fix hallucination:</p>
+      <div class="compare-grid">
+        <div class="compare-col good">
+          <h4>RAG — what the next module covers ✓</h4>
+          <ul>
+            <li>Retrieval-Augmented Generation</li>
+            <li>Before answering, search your documents, find the relevant passages, paste them into the prompt</li>
+            <li>The model then answers <em>from those passages</em></li>
+            <li>~90% of enterprise chatbots work this way</li>
+            <li>Works for live data — fetch at query time</li>
+          </ul>
+        </div>
+        <div class="compare-col bad">
+          <h4>Fine-tuning — less common, less flexible</h4>
+          <ul>
+            <li>Adjust the model's weights on your data</li>
+            <li>Heavier — requires GPU time and ML expertise</li>
+            <li>Still can't know live data (a current balance, today's rate)</li>
+            <li>Used for teaching the model a style or format, not facts</li>
+            <li>Not covered in this module</li>
+          </ul>
+        </div>
+      </div>
+      <div class="note-box"><strong>The gap is deliberate</strong> This lab gives you the engine. It does not give the engine NovaPay's knowledge. Seeing that gap — asking about NovaPay's refund policy and getting a generic answer — is the lesson that motivates the next module (RAG).</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ SECTION 05: PROMPTS + DIALS -->
+<section class="problem" id="prompts-dials">
+  <div class="problem-header">
+    <div class="problem-num">05</div>
+    <div class="problem-titles">
+      <h2>Context window, prompts &amp; the dials.</h2>
+      <div class="tagline">// the four knobs you control every time you call the model</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>Type</strong> Core concept</span>
+      <span class="row"><strong>Lab ref</strong> demo.sh ask()</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label concept">Context window</div>
+    <div class="section-body">
+      <p>The model can only "look at" a limited amount of text at once. In this lab, <code>--max-model-len 2048</code> means the model's window is <strong>2048 tokens total</strong> (your prompt + its answer combined). That's its entire working memory for a single request.</p>
+      <p>Go over 2048 tokens and the oldest text falls out of view — the model effectively "forgets" the start of a very long conversation. This is why:</p>
+      <div class="practices-box">
+        <h5>Why context window size matters in production</h5>
+        <ul>
+          <li>Long documents must be <strong>chunked</strong> before being passed to the model — you can't paste a 100-page policy document into a 2048-token window</li>
+          <li>A chatbot "forgets" the start of a very long conversation when the window fills up</li>
+          <li>RAG depends on chunking — the retrieved passages must fit inside the window alongside the question</li>
+          <li>2048 is small — chosen to fit our lab hardware. Production Mistral models support 32k tokens. Claude and GPT-4 support 128k–200k tokens.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label concept">Prompts &amp; dials</div>
+    <div class="section-body">
+      <p>Every request to the model is a structured JSON payload. Look at the real request this lab sends:</p>
+      <pre><button class="copy-btn" onclick="navigator.clipboard.writeText(this.nextSibling.textContent);this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy';this.classList.remove('copied')},2000)">Copy</button><span>{
+  <span class="cs">"model"</span>: <span class="cs">"/models/mistral-7b-v0.3"</span>,
+  <span class="cs">"messages"</span>: [
+    {
+      <span class="cs">"role"</span>: <span class="cs">"system"</span>,
+      <span class="cs">"content"</span>: <span class="cs">"You are NovaPay's support assistant. Answer briefly."</span>
+    },
+    {
+      <span class="cs">"role"</span>: <span class="cs">"user"</span>,
+      <span class="cs">"content"</span>: <span class="cs">"What is a payment chargeback?"</span>
+    }
+  ],
+  <span class="cs">"max_tokens"</span>: <span class="ca">80</span>,
+  <span class="cs">"temperature"</span>: <span class="ca">0.2</span>
+}</span></pre>
+
+      <div class="concept-table-wrap">
+        <table>
+          <thead><tr><th>Field</th><th>What it does</th><th>Lab value &amp; why</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>system message</td>
+              <td>Instructions that set the model's behaviour, persona, and scope. The user never sees it — it shapes every single answer silently. This is your biggest lever. "Prompt engineering" is mostly about getting this right.</td>
+              <td>"You are NovaPay's support assistant. Answer briefly." — sets persona and tone before the user types anything</td>
+            </tr>
+            <tr>
+              <td>user message</td>
+              <td>The actual question from the person chatting. What they typed.</td>
+              <td>"What is a payment chargeback?" — the real question</td>
+            </tr>
+            <tr>
+              <td>max_tokens</td>
+              <td>Hard cap on answer length in tokens. Answers cut off at the limit show <code>finish_reason: "length"</code> instead of <code>"stop"</code>. Setting this too low produces truncated answers; too high costs more compute.</td>
+              <td>80 tokens — short for support answers. If you see truncated answers, increase this.</td>
+            </tr>
+            <tr>
+              <td>temperature</td>
+              <td>The creativity / randomness dial, from 0 to 2. Low (0.2) = focused, consistent, repeatable — same question, same answer. High (1.5+) = more varied and creative, but more likely to wander or make things up. For support bots: keep it low.</td>
+              <td>0.2 — focused and consistent, right for a support assistant answering factual questions</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ SECTION 06: HARDWARE + VLLM -->
+<section class="problem" id="hardware-stack">
+  <div class="problem-header">
+    <div class="problem-num">06</div>
+    <div class="problem-titles">
+      <h2>Why it needs special hardware — and the three-layer stack.</h2>
+      <div class="tagline">// accelerator → vLLM → openai api → open webui</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>Type</strong> Architecture</span>
+      <span class="row"><strong>Node</strong> inf2.xlarge</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label arch">Accelerator</div>
+    <div class="section-body">
+      <p>Predicting the next token means multiplying huge grids of numbers — the 7 billion weights — together billions of times per token. A regular CPU does matrix multiplication sequentially. That's far too slow for real-time responses.</p>
+      <p><strong>Accelerators</strong> — GPUs, or AWS's own <strong>Inferentia/Trainium</strong> chips — are purpose-built to do this matrix math in massive parallel batches. Without one, a 7B model takes minutes to generate a single response. With one, it takes milliseconds.</p>
+      <p>This lab uses an <code>inf2.xlarge</code> — one AWS Inferentia2 chip with <strong>2 Neuron cores</strong>. That core count is why you see these flags in the vLLM deployment:</p>
+      <pre><span class="cm"># Split the model across both cores — each core holds half the weights</span>
+<span class="ck">--tensor-parallel-size</span> <span class="ca">2</span>
+<span class="ck">NEURON_RT_NUM_CORES</span>=<span class="ca">2</span></pre>
+      <p>"Tensor parallelism" means slicing the 7B weight matrix in half and distributing it across both Neuron cores, which then collaborate on each token prediction. Bigger models need more cores (split across more chips). Bigger chips like trn1.32xlarge or inf2.48xlarge support much larger models.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label arch">Taint &amp; toleration</div>
+    <div class="section-body">
+      <p>The Neuron node is expensive — $0.76/hr. You don't want CoreDNS, your chat UI, or any system pod landing on it and wasting that compute. Kubernetes taints solve this.</p>
+
+      <div class="war-story" data-label="🖥️ EXAMPLE — TAINTS AND TOLERATIONS EXPLAINED">
+        <strong style="font-style:normal;font-family:'JetBrains Mono',monospace;color:var(--accent-2);display:block;margin-bottom:8px;">Real-world analogy before the Kubernetes version:</strong>
+        Imagine you have a mixed cluster with both Windows nodes and Linux nodes. You have a .NET application that can only run on Windows — it won't even start on a Linux node. You need a way to tell Kubernetes "only schedule this pod on Windows nodes" and "keep everything else off Windows nodes."<br><br>
+        You <strong>taint</strong> every Windows node: <code style="color:var(--accent-2);">os=windows:NoSchedule</code>. This means: "nothing lands here unless it explicitly says it can tolerate this." Then you add a matching <strong>toleration</strong> to your .NET pod: "I can tolerate <code style="color:var(--accent-2);">os=windows</code>." Only the .NET pod gets scheduled on Windows nodes. Everything else — your Python microservices, your databases, your monitoring — stays on Linux nodes.<br><br>
+        <strong style="font-style:normal;">Now in this lab:</strong> the inf2.xlarge Neuron node is tainted <code style="color:var(--accent-2);">aws.amazon.com/neuron=true:NO_SCHEDULE</code>. Only the vLLM pod (the Mistral model pod) has the matching toleration. CoreDNS, Open WebUI, your system pods — all stay off the expensive accelerator. You pay $0.76/hr for exactly one thing: running the model.
+      </div>
+
+      <pre><span class="cm"># The taint on the inf2.xlarge node (set in main.tf node group)</span>
+<span class="ck">taint</span> {
+  key    = <span class="cs">"aws.amazon.com/neuron"</span>
+  value  = <span class="cs">"true"</span>
+  effect = <span class="cs">"NO_SCHEDULE"</span>     <span class="cm"># nothing lands here unless it tolerates this</span>
+}
+
+<span class="cm"># The toleration in the vLLM pod spec — only this pod can land on the Neuron node</span>
+tolerations:
+  - key: <span class="cs">"aws.amazon.com/neuron"</span>
+    value: <span class="cs">"true"</span>
+    effect: <span class="cs">"NoSchedule"</span></pre>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label arch">vLLM</div>
+    <div class="section-body">
+      <p>You don't write your own program to load and run the model. <strong>vLLM</strong> is an open-source <strong>inference server</strong> that does it for you: point it at the model weights, it loads them onto the Neuron cores and exposes an HTTP API so anything can send prompts and get answers.</p>
+      <div class="practices-box">
+        <h5>Why vLLM is the industry standard for self-hosted LLMs</h5>
+        <ul>
+          <li><strong>Efficient — PagedAttention:</strong> a memory management technique that lets vLLM serve many simultaneous requests on one accelerator by intelligently batching them. Without it, each request would hog the entire GPU/chip until done. This is what makes self-hosting affordable.</li>
+          <li><strong>OpenAI-compatible API:</strong> vLLM exposes the exact same HTTP endpoints that OpenAI uses. Any tool that can call OpenAI can call your self-hosted model by changing one URL. No code changes needed.</li>
+          <li><strong>Neuron support:</strong> vLLM has built-in support for AWS Inferentia/Trainium chips, which is why this lab uses it rather than a simpler alternative.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label arch">OpenAI API standard</div>
+    <div class="section-body">
+      <p>vLLM exposes the same HTTP endpoints OpenAI uses — this is a de-facto industry standard:</p>
+      <div class="concept-table-wrap">
+        <table>
+          <thead><tr><th>Endpoint</th><th>What it does</th><th>Used in lab</th></tr></thead>
+          <tbody>
+            <tr><td><code>GET /v1/models</code></td><td>Lists the model(s) currently served — confirms Mistral is loaded and ready</td><td>module-12-demo.sh Step B.2</td></tr>
+            <tr><td><code>POST /v1/chat/completions</code></td><td>Send a conversation (system + user messages), get the model's next reply</td><td>Every chat message, module-12-demo.sh ask()</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>This standard means any client — Open WebUI, curl, Python scripts, LangChain, LlamaIndex, your own app — can talk to your self-hosted Mistral by setting one environment variable:</p>
+      <pre><span class="cm"># How Open WebUI connects to vLLM — one variable, no code changes</span>
+<span class="ck">OPENAI_API_BASE_URL</span>=<span class="cs">http://mistral.vllm:8080/v1</span></pre>
+      <p>The model (vLLM) and the UI (Open WebUI) are <strong>completely decoupled</strong>. Swap the model for Llama or Phi without touching the UI. Swap the UI without touching the model. That's intentional architecture.</p>
+
+      <div class="diagram" data-fig="FIG 2 — THE THREE-LAYER SELF-HOSTED LLM STACK">
+        <svg viewBox="0 0 760 280" font-family="'Space Grotesk',sans-serif">
+          <defs>
+            <marker id="da" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0,8 3,0 6" fill="#6b655d"/>
+            </marker>
+          </defs>
+          <!-- Layer 1: Hardware -->
+          <rect x="10" y="10" width="740" height="80" rx="4" fill="#0f3a5f"/>
+          <text x="375" y="33" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#f4a300">LAYER 1 — HARDWARE: inf2.xlarge EKS node (AWS Inferentia2)</text>
+          <rect x="240" y="43" width="160" height="38" rx="3" fill="#ebe6dc" stroke="#cfc7b6"/>
+          <text x="320" y="61" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#0f3a5f">Neuron Core 0</text>
+          <text x="320" y="75" text-anchor="middle" font-size="11" fill="#6b655d">½ of 7B weights</text>
+          <rect x="420" y="43" width="160" height="38" rx="3" fill="#ebe6dc" stroke="#cfc7b6"/>
+          <text x="500" y="61" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#0f3a5f">Neuron Core 1</text>
+          <text x="500" y="75" text-anchor="middle" font-size="11" fill="#6b655d">½ of 7B weights</text>
+          <text x="375" y="83" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#79c0ff">tensor-parallel-size 2 — model split across both cores simultaneously</text>
+          <!-- Taint badge -->
+          <rect x="20" y="43" width="110" height="38" rx="3" fill="none" stroke="#f4a300" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <text x="75" y="61" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#f4a300">TAINTED</text>
+          <text x="75" y="74" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#f4a300">NO_SCHEDULE</text>
+          <!-- Arrow down -->
+          <line x1="375" y1="92" x2="375" y2="110" stroke="#6b655d" stroke-width="1.5" marker-end="url(#da)"/>
+          <!-- Layer 2: vLLM -->
+          <rect x="10" y="112" width="740" height="80" rx="4" fill="#ff5722"/>
+          <text x="375" y="138" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#ebe6dc">LAYER 2 — vLLM INFERENCE SERVER  (pod: mistral-* · namespace: vllm · port: 8080)</text>
+          <text x="375" y="158" text-anchor="middle" font-size="12" fill="#ebe6dc">Loads weights onto Neuron. Batches requests with PagedAttention. Exposes OpenAI API.</text>
+          <text x="230" y="178" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#f4a300">GET /v1/models</text>
+          <text x="530" y="178" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#f4a300">POST /v1/chat/completions</text>
+          <!-- Arrow down -->
+          <line x1="375" y1="194" x2="375" y2="212" stroke="#6b655d" stroke-width="1.5" marker-end="url(#da)"/>
+          <!-- Layer 3: Clients -->
+          <rect x="10" y="214" width="360" height="58" rx="4" fill="#2d6a4f"/>
+          <text x="190" y="237" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#ebe6dc">LAYER 3a — Open WebUI  (pod: chat-ui · ns: chatbot)</text>
+          <text x="190" y="258" text-anchor="middle" font-size="11" fill="#a8d5a8">Friendly browser UI. OPENAI_API_BASE_URL=http://mistral.vllm:8080/v1</text>
+          <rect x="390" y="214" width="360" height="58" rx="4" fill="#5c5648"/>
+          <text x="570" y="237" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#ebe6dc">LAYER 3b — curl / module-12-demo.sh</text>
+          <text x="570" y="258" text-anchor="middle" font-size="11" fill="#e3dccf">Direct API calls from inside cluster via kubectl run</text>
+        </svg>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-top:4px;font-family:'JetBrains Mono',monospace;text-align:center;">FIG 2 — Three layers. Swap either side of any layer without touching the others.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ SECTION 07: DATA RESIDENCY -->
+<section class="problem" id="data-residency">
+  <div class="problem-header">
+    <div class="problem-num">07</div>
+    <div class="problem-titles">
+      <h2>Why a bank self-hosts instead of calling OpenAI.</h2>
+      <div class="tagline">// data residency — the compliance argument in plain terms</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>Type</strong> Business + compliance</span>
+      <span class="row"><strong>Regulation</strong> PCI-DSS · GDPR · FCA</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label why">The problem</div>
+    <div class="section-body">
+      <p>The easy path is to call a public LLM API — OpenAI, Anthropic, Gemini. One API key, done. The problem for a bank is what goes inside the prompt.</p>
+      <div class="gotcha-box">
+        <h4>Customer prompts contain regulated data</h4>
+        <ul>
+          <li>Account numbers, sort codes, IBAN numbers</li>
+          <li>Transaction amounts and histories</li>
+          <li>Sometimes card data — PAN, expiry, CVV fragments</li>
+          <li>Personal identifiable information — names, addresses, DOBs</li>
+        </ul>
+      </div>
+      <p>Sending any of that to a public API means the data crosses your network boundary and lands on a server you don't control. That's a:</p>
+      <div class="practices-box">
+        <h5>Regulatory violations triggered by sending prompts to a public LLM API</h5>
+        <ul>
+          <li><strong>PCI-DSS violation</strong> — cardholder data cannot leave your controlled environment to a non-PCI-certified third party</li>
+          <li><strong>GDPR violation</strong> — personal data being processed by a third party without a Data Processing Agreement in place</li>
+          <li><strong>FCA operational resilience rules</strong> — outsourcing critical functions (customer support decisioning) to a third party without proper risk management and contracts</li>
+          <li><strong>Internal security policy</strong> — most banks explicitly prohibit sending customer data to external AI services, full stop</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label verify">The solution</div>
+    <div class="section-body">
+      <p>In this lab, the model is a <strong>ClusterIP service</strong> — internal only, no public endpoint, no internet access. The prompt goes from the browser UI to the model and back, entirely inside your VPC, on hardware in your own AWS account. It never leaves.</p>
+
+      <div class="diagram" data-fig="FIG 3 — DATA RESIDENCY: SELF-HOSTED VS PUBLIC API">
+        <svg viewBox="0 0 760 240" font-family="'Space Grotesk',sans-serif">
+          <defs>
+            <marker id="ga" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0,8 3,0 6" fill="#2d6a4f"/>
+            </marker>
+            <marker id="ra" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0,8 3,0 6" fill="#c0392b"/>
+            </marker>
+          </defs>
+          <!-- Self-hosted side -->
+          <rect x="10" y="10" width="340" height="220" rx="6" fill="none" stroke="#2d6a4f" stroke-width="2.5" stroke-dasharray="8 4"/>
+          <text x="180" y="32" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#2d6a4f">YOUR AWS VPC — SELF-HOSTED</text>
+          <!-- Customer -->
+          <rect x="25" y="50" width="90" height="45" rx="3" fill="#e3dccf" stroke="#0a0e0d" stroke-width="1.5"/>
+          <text x="70" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="#0a0e0d">Customer</text>
+          <text x="70" y="86" text-anchor="middle" font-size="11" fill="#6b655d">Browser</text>
+          <!-- Arrow to WebUI -->
+          <line x1="117" y1="72" x2="140" y2="72" stroke="#2d6a4f" stroke-width="2" marker-end="url(#ga)"/>
+          <!-- WebUI -->
+          <rect x="142" y="50" width="90" height="45" rx="3" fill="#2d6a4f"/>
+          <text x="187" y="72" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#ebe6dc">Open WebUI</text>
+          <text x="187" y="86" text-anchor="middle" font-size="10" fill="#a8d5a8">chat-ui pod</text>
+          <!-- Arrow to vLLM -->
+          <line x1="234" y1="72" x2="257" y2="72" stroke="#2d6a4f" stroke-width="2" marker-end="url(#ga)"/>
+          <text x="245" y="65" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#2d6a4f">ClusterIP</text>
+          <!-- vLLM -->
+          <rect x="259" y="50" width="75" height="45" rx="3" fill="#ff5722"/>
+          <text x="296" y="72" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#ebe6dc">vLLM</text>
+          <text x="296" y="86" text-anchor="middle" font-size="10" fill="#ebe6dc">mistral pod</text>
+          <!-- Arrow down to chip -->
+          <line x1="296" y1="97" x2="296" y2="118" stroke="#ff5722" stroke-width="2" marker-end="url(#ra)"/>
+          <!-- inf2 -->
+          <rect x="210" y="120" width="170" height="40" rx="3" fill="#0f3a5f"/>
+          <text x="295" y="140" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#f4a300">inf2.xlarge Neuron node</text>
+          <text x="295" y="154" text-anchor="middle" font-size="10" fill="#ebe6dc">inference on YOUR hardware</text>
+          <!-- Tick -->
+          <text x="180" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#2d6a4f">✓ Prompt never leaves your VPC</text>
+          <text x="180" y="210" text-anchor="middle" font-size="12" fill="#2d6a4f">PCI-DSS · GDPR · FCA compliant</text>
+
+          <!-- VS -->
+          <text x="376" y="125" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="14" font-weight="800" fill="#c0392b">VS</text>
+          <!-- Public API side -->
+          <rect x="400" y="10" width="350" height="220" rx="6" fill="#f7ece0" stroke="#c0392b" stroke-width="2.5"/>
+          <text x="575" y="32" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#c0392b">PUBLIC LLM API — DATA LEAVES BOUNDARY</text>
+          <!-- Customer -->
+          <rect x="415" y="50" width="90" height="45" rx="3" fill="#e3dccf" stroke="#0a0e0d" stroke-width="1.5"/>
+          <text x="460" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="#0a0e0d">Customer</text>
+          <text x="460" y="86" text-anchor="middle" font-size="11" fill="#6b655d">with prompt</text>
+          <!-- Arrow across internet -->
+          <line x1="507" y1="72" x2="570" y2="72" stroke="#c0392b" stroke-width="2.5" marker-end="url(#ra)"/>
+          <text x="538" y="62" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#c0392b">INTERNET</text>
+          <!-- OpenAI -->
+          <rect x="573" y="50" width="90" height="45" rx="3" fill="#c0392b"/>
+          <text x="618" y="72" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#ebe6dc">OpenAI /</text>
+          <text x="618" y="86" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#ebe6dc">Public API</text>
+          <!-- Warning text -->
+          <text x="575" y="128" text-anchor="middle" font-size="12" fill="#c0392b">Account numbers, card data,</text>
+          <text x="575" y="148" text-anchor="middle" font-size="12" fill="#c0392b">personal details → their server</text>
+          <text x="575" y="178" text-anchor="middle" font-size="13" font-weight="700" fill="#c0392b">✗ PCI-DSS violation</text>
+          <text x="575" y="198" text-anchor="middle" font-size="13" font-weight="700" fill="#c0392b">✗ GDPR violation</text>
+          <text x="575" y="218" text-anchor="middle" font-size="13" font-weight="700" fill="#c0392b">✗ FCA breach</text>
+        </svg>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-top:4px;font-family:'JetBrains Mono',monospace;text-align:center;">FIG 3 — Self-hosted: data stays inside. Public API: data crosses your boundary. For a bank, there is only one option.</p>
+
+      <div class="war-story" data-label="🏦 THE PRINCIPLE THAT DRIVES THIS ENTIRE MODULE">
+        The prompt goes from the UI to the model and back, entirely inside your VPC, on hardware in your account. It never leaves. That's the whole reason to self-host, and it's the one thing you never compromise on. Every architectural decision in this lab — the ClusterIP service type, running in-cluster curl rather than external curl, the Kubernetes taint keeping the model isolated — flows from this single requirement.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ SECTION 08: GLOSSARY -->
+<section class="problem" id="glossary">
+  <div class="problem-header">
+    <div class="problem-num">08</div>
+    <div class="problem-titles">
+      <h2>Glossary — every term used in this lab.</h2>
+      <div class="tagline">// one-line definitions, no jargon in the definitions</div>
+    </div>
+    <div class="problem-meta">
+      <span class="row"><strong>Type</strong> Reference</span>
+      <span class="row"><strong>Use</strong> When stuck</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label ref">Glossary</div>
+    <div class="section-body">
+      <div class="glossary-grid">
+        <div class="glossary-item"><b>LLM</b>Large Language Model. A next-token predictor trained on massive amounts of text. Mistral-7B is an LLM.</div>
+        <div class="glossary-item"><b>Token</b>A piece of a word — the unit the model reads and generates. ~¾ of a word, or ~4 characters. All limits and costs are measured in tokens.</div>
+        <div class="glossary-item"><b>Parameter / weight</b>One of the billions of numbers the model learned during training. The model file <em>is</em> these numbers.</div>
+        <div class="glossary-item"><b>7B</b>Short for "7 billion parameters." Describes the model's size and roughly its capability and memory footprint.</div>
+        <div class="glossary-item"><b>Training</b>The one-time, expensive process of learning the weights from huge amounts of text. Done by Mistral's team, not you.</div>
+        <div class="glossary-item"><b>Inference</b>Using the already-trained weights to answer a question. What this lab does — every chat message is inference.</div>
+        <div class="glossary-item"><b>Knowledge cutoff</b>The date training data stopped. The model knows nothing after this date and nothing about your internal systems.</div>
+        <div class="glossary-item"><b>Hallucination</b>When the model confidently produces a fluent, wrong answer about something it doesn't actually know.</div>
+        <div class="glossary-item"><b>RAG</b>Retrieval-Augmented Generation. Searching your documents for relevant passages and injecting them into the prompt before asking the model. Fixes hallucination for company-specific knowledge.</div>
+        <div class="glossary-item"><b>Context window</b>The maximum number of tokens the model can consider in one request — prompt + answer combined. 2048 tokens in this lab.</div>
+        <div class="glossary-item"><b>System message</b>The hidden instructions that set the model's persona and behaviour before the user types anything. Your biggest lever.</div>
+        <div class="glossary-item"><b>Temperature</b>Randomness dial (0–2). Low = focused and consistent. High = creative but more likely to hallucinate. Support bots: keep it low (0.2).</div>
+        <div class="glossary-item"><b>max_tokens</b>Hard cap on answer length in tokens. Prevents runaway long responses and caps compute cost per query.</div>
+        <div class="glossary-item"><b>Accelerator</b>Specialist chip (GPU, AWS Inferentia, AWS Trainium) that does the matrix math fast. Without one, a 7B model is unusably slow.</div>
+        <div class="glossary-item"><b>AWS Inferentia2</b>AWS's custom inference chip. The inf2.xlarge has one Inferentia2 chip with 2 Neuron cores.</div>
+        <div class="glossary-item"><b>Neuron core</b>A compute unit inside an Inferentia2 chip. The inf2.xlarge has 2 cores. The model is split across both (tensor parallelism).</div>
+        <div class="glossary-item"><b>Tensor parallelism</b>Splitting the model's weight matrix across multiple cores so they work in parallel. Required when the model is too big for one core.</div>
+        <div class="glossary-item"><b>Neuron device plugin</b>A Kubernetes DaemonSet that tells the scheduler that Neuron cores exist on this node and can be requested by pods.</div>
+        <div class="glossary-item"><b>Taint</b>A Kubernetes node property that says "nothing lands here unless it explicitly tolerates this." Used here to protect the expensive Neuron node.</div>
+        <div class="glossary-item"><b>Toleration</b>A pod property that says "I am allowed on nodes with this taint." Only the vLLM pod has the Neuron toleration in this lab.</div>
+        <div class="glossary-item"><b>vLLM</b>Open-source inference server. Loads model weights onto the accelerator, exposes the OpenAI API, and batches concurrent requests efficiently.</div>
+        <div class="glossary-item"><b>PagedAttention</b>vLLM's memory management technique that allows multiple concurrent requests to share the accelerator by batching them intelligently.</div>
+        <div class="glossary-item"><b>OpenAI API</b>The de-facto HTTP standard for LLMs — <code>POST /v1/chat/completions</code>. vLLM speaks this standard so any OpenAI-compatible client works unchanged.</div>
+        <div class="glossary-item"><b>ClusterIP</b>Kubernetes service type. Internal only — no public endpoint, no internet access. Used for the vLLM service to enforce data residency.</div>
+        <div class="glossary-item"><b>Open WebUI</b>The browser-based chat UI in this lab. It's just a client of the vLLM API — no intelligence of its own.</div>
+        <div class="glossary-item"><b>Data residency</b>The requirement that data stays inside a defined geographic or network boundary. For NovaPay: customer prompts must stay inside the VPC. Self-hosting enforces this.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="section">
+    <div class="section-label complete">Summary</div>
+    <div class="section-body">
+      <div class="summary-box">
+        <h4>Module 12 — what you now understand</h4>
+        <ul>
+          <li>An LLM is a next-token predictor — it predicts the most likely next piece of text, one token at a time, until it stops. Everything else is this one trick at scale.</li>
+          <li>Tokens are the unit everything is measured in. Parameters/weights are the 7 billion numbers that do the predicting. The download is the model.</li>
+          <li>Training = learning the numbers (done by Mistral, not you). Inference = using the numbers to answer (this lab is 100% inference).</li>
+          <li>The model knows general knowledge but nothing about NovaPay. When pushed for specifics, it hallucinates — confidently producing wrong answers. The fix is RAG (next module).</li>
+          <li>The context window (2048 tokens here) is the model's total working memory per request — prompt + answer combined. Go over it and old context is forgotten.</li>
+          <li>The system message, temperature, and max_tokens are the three dials you control on every call. The system message is your biggest lever.</li>
+          <li>The inf2.xlarge Neuron node does the matrix math. The taint (+ .NET/Windows analogy → Neuron analogy) keeps non-model pods off the expensive node. vLLM runs the model and speaks the OpenAI API. Open WebUI is just a UI client.</li>
+          <li>A bank self-hosts because customer prompts contain regulated data. Sending them to a public API crosses the compliance boundary. ClusterIP service = internal only = data never leaves the VPC.</li>
+          <li><strong>Next module:</strong> RAG — giving the model NovaPay's actual policies, so it answers from real data instead of hallucinating.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ OUTRO -->
+<footer class="outro">
+  <h2>Build systems that keep<br><em>customer data inside your boundary.</em></h2>
+  <p>Self-hosting an LLM is not about saving money on API calls. It's about owning the data path entirely — so no prompt ever crosses a boundary you can't control.</p>
+  <p>Every architectural decision in this module flows from that single requirement: taint, ClusterIP, in-cluster curl. Know the why, and the how follows naturally.</p>
+  <div class="sig">NovaPay // AWS Architecture Bootcamp // Module 12 // AI From Scratch</div>
+  <div class="copyright">
+    <strong>Module</strong> 12 — Self-hosted LLM Chatbot on EKS (vLLM + AWS Neuron) &nbsp;·&nbsp;
+    <strong>Type</strong> Conceptual Teaching Guide &nbsp;·&nbsp;
+    <strong>Stack</strong> Mistral-7B · vLLM · inf2.xlarge · EKS 1.30
+  </div>
+</footer>
+
+</div><!-- /wrap -->
+</body>
+</html>
